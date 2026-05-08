@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useRef, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { Link, useNavigate, useSearchParams } from "react-router-dom"
 import "../styles/main.css"
 import { getAllProducts } from "../api/products"
@@ -49,8 +49,8 @@ function MainPage(){
         const q = (searchParams.get("q") || "").trim()
         if(c) setActiveCategory(c)
         if(q) setQuery(q)
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [])
+
+    }, [searchParams])
 
     const visibleProducts = useMemo(() => {
         const q = query.trim().toLowerCase()
@@ -89,7 +89,7 @@ function MainPage(){
 
         load()
         return () => { cancelled = true }
-    }, [])
+    }, [searchParams])
 
     useEffect(() => {
         const onDocMouseDown = (e) => {
@@ -109,7 +109,7 @@ function MainPage(){
             document.removeEventListener("mousedown", onDocMouseDown)
             document.removeEventListener("keydown", onKeyDown)
         }
-    }, [])
+    }, [searchParams])
 
     const clearFilters = () => {
         setActiveCategory("all")
@@ -380,7 +380,7 @@ function MainPage(){
                     </div>
 
                     <div className="mp-home-footer-bottom">
-                        <div>© 2026 NovaMart</div>
+                        <div>� 2026 NovaMart</div>
                         <div className="mp-home-footer-bottom-links">
                             <span>Home / Categories / Products</span>
                         </div>
@@ -392,3 +392,5 @@ function MainPage(){
 }
 
 export default MainPage
+
+

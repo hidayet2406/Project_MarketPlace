@@ -15,6 +15,7 @@ import ShopPanel from "./pages/ShopPanel"
 import ShopDetail from "./pages/ShopDetail"
 import AddProduct from "./pages/AddProduct"
 import UpdateProduct from "./pages/UpdateProduct"
+import NotFound from "./pages/NotFound"
 
 function App(){
 
@@ -40,6 +41,7 @@ function App(){
                 <Route path="/shop/:slug" element={<ShopDetail/>}/>
                 <Route path="/login" element={<Login/>}/>
                 <Route path="/register" element={<Register/>}/>
+                <Route path="*" element={<NotFound/>}/>
 
             </Routes>
 

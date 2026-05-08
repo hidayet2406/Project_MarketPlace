@@ -38,7 +38,6 @@ function Register(){
 
         <div className="auth-page">
         <div className="auth-container">
-
             <h2>Register</h2>
 
             <input name="username" placeholder="Username" onChange={handleChange}/>
@@ -71,6 +70,9 @@ function Register(){
                 Already have an account? <Link to="/login">Sign in</Link>
             </div>
 
+            <div style={{ marginTop: 30 }}>
+                <Link to="/" style={{ color: "var(--mp-link)", textDecoration: "none", fontWeight: 800 }}>Back to home ?</Link>
+            </div>
         </div>
         </div>
     )

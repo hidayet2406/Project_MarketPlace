@@ -49,7 +49,6 @@ function Login(){
 
         <div className="auth-page">
         <div className="auth-container">
-
             <h2>Login</h2>
 
             <input name="username" placeholder="Username" onChange={handleChange}/>
@@ -79,6 +78,9 @@ function Login(){
 
             <div className="auth-link">
                 No account? <Link to="/register">Create one</Link>
+            </div>
+            <div style={{ marginTop: 30 }}>
+                <Link to="/" style={{ color: "var(--mp-link)", textDecoration: "none", fontWeight: 800 }}>Back to home ?</Link>
             </div>
 
         </div>
