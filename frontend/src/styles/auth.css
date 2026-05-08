@@ -1,0 +1,110 @@
+/* Keep auth styles scoped to auth pages; don't style global body. */
+.auth-page{
+    min-height:calc(100vh - 0px);
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    padding:24px;
+}
+
+.auth-container{
+    background:var(--mp-card, #fff);
+    border:1px solid var(--mp-border, #d5d9d9);
+    padding:28px;
+    border-radius:10px;
+    width:min(520px, 100%);
+    box-shadow:0 8px 22px rgba(0,0,0,0.10);
+    text-align:left;
+}
+
+.auth-container h2{
+    margin:0 0 14px;
+    font-size:26px;
+    font-weight:900;
+    color:var(--mp-text, #111);
+}
+
+.auth-container input{
+    width:100%;
+    padding:14px 12px;
+    margin:12px 0;
+    border:1px solid var(--mp-border, #d5d9d9);
+    border-radius:6px;
+    font-size:16px;
+}
+
+.auth-field{
+    position:relative;
+    margin:12px 0;
+}
+
+.auth-field input{
+    margin:0;
+    padding-right:46px;
+}
+
+.auth-eye{
+    position:absolute;
+    right:10px;
+    top:50%;
+    transform:translateY(-50%);
+    width:36px;
+    height:36px;
+    border:none;
+    background:transparent;
+    color:#555;
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    border-radius:8px;
+    z-index:2;
+}
+
+.auth-eye:hover{
+    background:rgba(0,0,0,0.06);
+}
+
+.auth-eye svg{
+    width:20px;
+    height:20px;
+}
+
+.auth-container input:focus{
+    outline:none;
+    border-color:#b8bcbc;
+}
+
+.auth-container button:not(.auth-eye){
+    width:100%;
+    padding:14px 12px;
+    margin-top:12px;
+    border:1px solid #d5a04e;
+    border-radius:6px;
+    background:var(--mp-accent, #febd69);
+    color:#111;
+    font-size:18px;
+    cursor:pointer;
+    transition:0.3s;
+    font-weight:800;
+}
+
+.auth-container button:hover{
+    filter:brightness(0.98);
+}
+
+.auth-link{
+    margin-top:15px;
+    font-size:16px;
+    color:var(--mp-muted, #555);
+}
+
+.auth-link a{
+    color:var(--mp-link, #007185);
+    text-decoration:none;
+    font-weight:bold;
+}
+
+.auth-link a:hover{
+    text-decoration:underline;
+}
