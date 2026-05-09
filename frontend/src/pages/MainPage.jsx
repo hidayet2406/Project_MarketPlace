@@ -35,8 +35,6 @@ function MainPage(){
 
     const [activeCategory, setActiveCategory] = useState("all")
     const [query, setQuery] = useState("")
-    const [email, setEmail] = useState("")
-
     const [categories, setCategories] = useState([])
     const [products, setProducts] = useState([])
     const [loading, setLoading] = useState(true)
@@ -110,22 +108,6 @@ function MainPage(){
             document.removeEventListener("keydown", onKeyDown)
         }
     }, [searchParams])
-
-    const clearFilters = () => {
-        setActiveCategory("all")
-        setQuery("")
-    }
-
-    const onNewsletterSubmit = (e) => {
-        e.preventDefault()
-        const value = email.trim()
-        if(!value || !value.includes("@")){
-            alert("Please enter a valid email.")
-            return
-        }
-        alert("Thanks! You'll hear from us soon.")
-        setEmail("")
-    }
 
     return (
         <div className="mp-shell">
@@ -209,74 +191,6 @@ function MainPage(){
             </header>
 
             <main className="mp-container">
-                <section className="mp-hero">
-                    <div className="mp-hero-card">
-                        <div className="mp-hero-grid">
-                            <div>
-                                <div className="mp-kicker mp-fade" data-delay="1">
-                                    <span className="mp-kicker-badge">Spring '26</span>
-                                    <span>Fresh essentials, fast shipping.</span>
-                                </div>
-
-                                <h1 className="mp-h1 mp-fade" data-delay="2">
-                                    Shop the <span>clean</span> look. Keep the <span>bold</span> feel.
-                                </h1>
-
-                                <p className="mp-lede mp-fade" data-delay="3">
-                                    Curated drops for everyday life: apparel, home, and small upgrades that look expensive without trying.
-                                </p>
-
-                                <div className="mp-cta mp-fade" data-delay="3">
-                                    <button
-                                        className="mp-btn mp-btn-primary"
-                                        type="button"
-                                        onClick={() => {
-                                            const c = categories.find((x) => String(x?.name || "").toLowerCase().includes("new"))
-                                            setActiveCategory(c?.name || "all")
-                                        }}
-                                    >
-                                        Explore new arrivals
-                                    </button>
-                                    <button
-                                        className="mp-btn mp-btn-ghost"
-                                        type="button"
-                                        onClick={() => {
-                                            const c = categories.find((x) => String(x?.name || "").toLowerCase().includes("sale"))
-                                            setActiveCategory(c?.name || "all")
-                                        }}
-                                    >
-                                        Browse sale
-                                    </button>
-                                    {(activeCategory !== "all" || query) ? (
-                                        <button className="mp-btn mp-btn-ghost" type="button" onClick={clearFilters}>
-                                            Clear filters
-                                        </button>
-                                    ) : null}
-                                </div>
-                            </div>
-
-                            <div className="mp-hero-art" aria-hidden="true" />
-                        </div>
-                    </div>
-                </section>
-
-                <section className="mp-features">
-                    <div className="mp-feature-row">
-                        <div className="mp-feature">
-                            <p className="mp-feature-title">Free shipping over $75</p>
-                            <p className="mp-feature-desc">Trackable delivery and protective packaging on every order.</p>
-                        </div>
-                        <div className="mp-feature">
-                            <p className="mp-feature-title">30-day returns</p>
-                            <p className="mp-feature-desc">Try it at home. If it is not right, send it back.</p>
-                        </div>
-                        <div className="mp-feature">
-                            <p className="mp-feature-title">Secure checkout</p>
-                            <p className="mp-feature-desc">Token-based auth is ready. Payments can be wired next.</p>
-                        </div>
-                    </div>
-                </section>
-
                 <section className="mp-section">
                     <div className="mp-section-head">
                         <div>
@@ -319,24 +233,6 @@ function MainPage(){
                                 </div>
                             </article>
                         ))}
-                    </div>
-                </section>
-
-                <section className="mp-section">
-                    <div className="mp-news">
-                        <div>
-                            <h3>Get early access</h3>
-                            <p>Drop alerts, small discounts, and new category launches.</p>
-                        </div>
-                        <form onSubmit={onNewsletterSubmit}>
-                            <input
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                                placeholder="you@example.com"
-                                aria-label="Email address"
-                            />
-                            <button className="mp-btn mp-btn-primary" type="submit">Subscribe</button>
-                        </form>
                     </div>
                 </section>
 

@@ -74,6 +74,10 @@ function UserDetail(){
     const [vendorError, setVendorError] = useState("")
     const [vendorSuccess, setVendorSuccess] = useState("")
     const [shop, setShop] = useState(null)
+    const [walletAmount, setWalletAmount] = useState("");
+    const [walletLoading, setWalletLoading] = useState(false);
+    const [walletError, setWalletError] = useState("");
+
 
     useEffect(() => {
         let cancelled = false
@@ -213,6 +217,29 @@ function UserDetail(){
             setVendorLoading(false)
         }
     }
+
+    
+    const handleDeposit = async (e) => {
+        e.preventDefault();
+        const amount = parseFloat(walletAmount);
+        if(isNaN(amount) || amount <= 0){
+            setWalletError("Please enter a valid amount.");
+            return;
+        }
+
+        setWalletLoading(true);
+        setWalletError("");
+        try{
+            const res = await API.post("/user/wallet/deposit", { amount });
+            setMe(res.data);
+            setWalletAmount("");
+            setToastMessage("Funds added successfully.");
+        }catch(err){
+            setWalletError("Failed to add funds.");
+        }finally{
+            setWalletLoading(false);
+        }
+    };
 
     const handleAddressSave = async (e) => {
         e.preventDefault()
@@ -409,6 +436,52 @@ function UserDetail(){
                                     </div>
                                 </>
                             )}
+                        </section>
+
+                        
+                        <section className="pd-card">
+                            <div className="ud-head">
+                                <h2 className="pd-title" style={{ fontSize: 18 }}>Wallet</h2>
+                                <div className="pd-muted">Manage your balance for quick purchases.</div>
+                            </div>
+                            
+                            <div className="ud-grid">
+                                <div className="ud-row">
+                                    <div className="ud-label">Current Balance</div>
+                                    <div className="ud-value" style={{ fontSize: 24, fontWeight: 700, color: "#2d2d2d" }}>
+                                        ${(me?.wallet || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <form className="ud-form" style={{ marginTop: 20 }} onSubmit={handleDeposit}>
+                                <div style={{ display: "flex", gap: 10, alignItems: "flex-end" }}>
+                                    <label className="ud-input-wrap" style={{ flex: 1 }}>
+                                        <div className="ud-label" style={{ marginBottom: 4 }}>Add Funds</div>
+                                        <input
+                                            type="number"
+                                            step="0.01"
+                                            value={walletAmount}
+                                            onChange={(e) => setWalletAmount(e.target.value)}
+                                            placeholder="Enter amount (e.g. 50.00)"
+                                            aria-label="Deposit amount"
+                                        />
+                                    </label>
+                                    <button 
+                                        className="mp-btn mp-btn-primary" 
+                                        type="submit" 
+                                        disabled={walletLoading}
+                                        style={{ height: 42 }}
+                                    >
+                                        {walletLoading ? "Adding..." : "Add Funds"}
+                                    </button>
+                                </div>
+                                {walletError && (
+                                    <div className="pd-muted" style={{ color: "#d93025", marginTop: 8 }}>
+                                        {walletError}
+                                    </div>
+                                )}
+                            </form>
                         </section>
 
                         <section className="pd-card">

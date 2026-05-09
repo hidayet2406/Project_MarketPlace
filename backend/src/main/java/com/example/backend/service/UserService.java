@@ -9,6 +9,7 @@ import com.example.backend.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Service
@@ -59,6 +60,17 @@ public class UserService {
         address.setZipCode(trimToNull(addressDTO.getZipCode()));
 
         return toAddressDto(addressRepository.save(address));
+    }
+
+    public User addFunds(String username, BigDecimal amount) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("USER NOT FOUND"));
+
+        BigDecimal currentWallet = user.getWallet() != null ? user.getWallet() : BigDecimal.ZERO;
+        user.setWallet(currentWallet.add(amount));
+        user.setUpdatedAt(LocalDateTime.now());
+
+        return userRepository.save(user);
     }
 
     private String trimToNull(String value){

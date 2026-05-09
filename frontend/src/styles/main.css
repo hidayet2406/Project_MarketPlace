@@ -17,12 +17,18 @@ body{
 }
 
 .mp-shell{
+  display: flex;
+  flex-direction: column;
   min-height:100vh;
   color:var(--mp-text);
   background:#eaeded;
 }
 
 .mp-grid-noise{ display:none; }
+
+main {
+  flex: 1;
+}
 
 .mp-container{ width:min(1200px, calc(100% - 24px)); margin:0 auto; }
 
@@ -1393,3 +1399,4 @@ body{
   box-shadow:0 24px 60px rgba(18,24,38,0.28);
   pointer-events: none;
 }
+

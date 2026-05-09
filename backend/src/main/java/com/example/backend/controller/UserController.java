@@ -14,6 +14,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.math.BigDecimal;
+import java.util.Map;
+
 @RestController
 @RequestMapping("/user")
 public class UserController {
@@ -84,6 +87,19 @@ public class UserController {
         return vendorService.getVendorRequest(principal.getUsername());
     }
 
-
+    @PostMapping("/wallet/deposit")
+    public User deposit(
+            @AuthenticationPrincipal UserDetails principal,
+            @RequestBody Map<String, BigDecimal> payload
+    ) {
+        if (principal == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "UNAUTHORIZED");
+        }
+        BigDecimal amount = payload.get("amount");
+        if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "INVALID AMOUNT");
+        }
+        return userService.addFunds(principal.getUsername(), amount);
+    }
 
 }

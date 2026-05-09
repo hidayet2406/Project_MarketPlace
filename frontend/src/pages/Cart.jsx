@@ -27,6 +27,7 @@ function Cart(){
     const [error, setError] = useState("")
     const [cart, setCart] = useState(null)
     const [busyId, setBusyId] = useState(null)
+    const [selectedIds, setSelectedIds] = useState([])
 
     const signedIn = Boolean(localStorage.getItem("token"))
 
@@ -35,10 +36,24 @@ function Cart(){
         return Array.isArray(list) ? list : []
     }, [cart])
 
-    const totalAmount = useMemo(() => {
-        const n = Number(cart?.totalAmount || 0)
-        return Number.isFinite(n) ? n : 0
-    }, [cart?.totalAmount])
+    // Automatically select all items when cart loads for the first time
+    useEffect(() => {
+        if(items.length > 0 && selectedIds.length === 0){
+            setSelectedIds(items.map(it => it.productId))
+        }
+    }, [items])
+
+    const selectedItems = useMemo(() => {
+        return items.filter(it => selectedIds.includes(it.productId))
+    }, [items, selectedIds])
+
+    const totalSelectedAmount = useMemo(() => {
+        return selectedItems.reduce((sum, it) => sum + (Number(it.lineTotal) || 0), 0)
+    }, [selectedItems])
+
+    const totalSelectedQuantity = useMemo(() => {
+        return selectedItems.reduce((sum, it) => sum + (Number(it.quantity) || 0), 0)
+    }, [selectedItems])
 
     const load = async () => {
         setLoading(true)
@@ -103,6 +118,7 @@ function Cart(){
             const data = await removeCartItem(productId)
             setCart(data)
             notifyCartChanged()
+            setSelectedIds(prev => prev.filter(id => id !== productId))
         }catch(err){
             const status = err?.response?.status
             const msg =
@@ -114,6 +130,22 @@ function Cart(){
             await load()
         }finally{
             setBusyId(null)
+        }
+    }
+
+    const toggleSelect = (productId) => {
+        setSelectedIds(prev => 
+            prev.includes(productId) 
+                ? prev.filter(id => id !== productId) 
+                : [...prev, productId]
+        )
+    }
+
+    const toggleAll = () => {
+        if(selectedIds.length === items.length){
+            setSelectedIds([])
+        } else {
+            setSelectedIds(items.map(it => it.productId))
         }
     }
 
@@ -168,7 +200,17 @@ function Cart(){
                             <div className="ct-left">
                                 <div className="pd-card">
                                     <div className="ct-head">
-                                        <h1 className="pd-title" style={{ fontSize: 20 }}>Your cart</h1>
+                                        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                                            {items.length > 0 && (
+                                                <input 
+                                                    type="checkbox" 
+                                                    checked={selectedIds.length === items.length}
+                                                    onChange={toggleAll}
+                                                    style={{ width: 18, height: 18, cursor: "pointer" }}
+                                                />
+                                            )}
+                                            <h1 className="pd-title" style={{ fontSize: 20, margin: 0 }}>Your cart</h1>
+                                        </div>
                                         <div className="pd-muted">{items.length} item{items.length === 1 ? "" : "s"}</div>
                                     </div>
 
@@ -180,7 +222,15 @@ function Cart(){
                                     ) : (
                                         <div className="ct-list">
                                             {items.map((it) => (
-                                                <article className="ct-item" key={it.productId}>
+                                                <article className="ct-item" key={it.productId} style={{ gridTemplateColumns: "30px 92px 1fr" }}>
+                                                    <div style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
+                                                        <input 
+                                                            type="checkbox" 
+                                                            checked={selectedIds.includes(it.productId)}
+                                                            onChange={() => toggleSelect(it.productId)}
+                                                            style={{ width: 18, height: 18, cursor: "pointer" }}
+                                                        />
+                                                    </div>
                                                     <div className="ct-img">
                                                         {it.imagePath ? <img src={resolveMediaUrl(it.imagePath)} alt={it.name} /> : null}
                                                     </div>
@@ -243,15 +293,20 @@ function Cart(){
                                 <div className="pd-card">
                                     <h2 className="pd-h2">Summary</h2>
                                     <div className="ct-sum-row">
-                                        <span className="pd-muted">Items</span>
-                                        <b>{Number(cart?.totalQuantity || 0)}</b>
+                                        <span className="pd-muted">Selected Items</span>
+                                        <b>{totalSelectedQuantity}</b>
                                     </div>
                                     <div className="ct-sum-row">
                                         <span className="pd-muted">Total</span>
-                                        <b>${totalAmount.toFixed(2)}</b>
+                                        <b>${totalSelectedAmount.toFixed(2)}</b>
                                     </div>
-                                    <button className="mp-btn mp-btn-primary ct-checkout" type="button" onClick={() => alert("Checkout not wired yet.")} disabled={items.length === 0}>
-                                        Checkout
+                                    <button 
+                                        className="mp-btn mp-btn-primary ct-checkout" 
+                                        type="button" 
+                                        onClick={() => alert(`Checkout for ${selectedIds.length} items. Total: $${totalSelectedAmount.toFixed(2)}`)} 
+                                        disabled={selectedIds.length === 0}
+                                    >
+                                        Checkout ({selectedIds.length})
                                     </button>
                                     <button className="mp-btn mp-ghost-link ct-continue" type="button" onClick={() => navigate("/")}>
                                         Continue shopping
