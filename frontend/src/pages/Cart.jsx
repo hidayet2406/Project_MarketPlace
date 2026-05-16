@@ -300,10 +300,10 @@ function Cart(){
                                         <span className="pd-muted">Total</span>
                                         <b>${totalSelectedAmount.toFixed(2)}</b>
                                     </div>
-                                    <button 
-                                        className="mp-btn mp-btn-primary ct-checkout" 
-                                        type="button" 
-                                        onClick={() => alert(`Checkout for ${selectedIds.length} items. Total: $${totalSelectedAmount.toFixed(2)}`)} 
+                                    <button
+                                        className="mp-btn mp-btn-primary ct-checkout"
+                                        type="button"
+                                        onClick={() => navigate("/checkout", { state: { selectedIds } })}
                                         disabled={selectedIds.length === 0}
                                     >
                                         Checkout ({selectedIds.length})
