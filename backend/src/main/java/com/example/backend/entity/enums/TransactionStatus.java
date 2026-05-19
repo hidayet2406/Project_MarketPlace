@@ -3,4 +3,5 @@ package com.example.backend.entity.enums;
 public enum TransactionStatus {
     DEPOSIT,
     WITHDRAW,
+    PURCHASE,
 }

@@ -3,8 +3,10 @@ import { Link, useLocation, useNavigate } from "react-router-dom"
 import "../styles/main.css"
 import { getCart } from "../api/cart"
 import API from "../api/api"
+import { checkoutWithWallet } from "../api/transactions"
 import useCartCount from "../hooks/useCartCount"
 import UserMenu from "../components/UserMenu"
+import { notifyCartChanged } from "../utils/cartEvents"
 import { resolveMediaUrl } from "../utils/resolveMediaUrl"
 
 function CartIcon(props){
@@ -28,7 +30,7 @@ const initialForm = {
     cardNumber: "",
     expiry: "",
     cvc: "",
-    paymentMethod: "card",
+    paymentMethod: "wallet",
 }
 
 function Checkout(){
@@ -43,6 +45,7 @@ function Checkout(){
     const [form, setForm] = useState(initialForm)
     const [submitting, setSubmitting] = useState(false)
     const [placed, setPlaced] = useState(false)
+    const [placedSummary, setPlacedSummary] = useState(null)
 
     const signedIn = Boolean(localStorage.getItem("token"))
     let selectedIds;
@@ -131,14 +134,45 @@ function Checkout(){
             return
         }
 
+        if(form.paymentMethod === "card"){
+            setError("Card payments are not integrated yet. Please use wallet.")
+            return
+        }
+
         setSubmitting(true)
         setError("")
 
         try{
-            await new Promise((resolve) => setTimeout(resolve, 900))
+            const result = await checkoutWithWallet({
+                productIds: items.map((item) => item.productId),
+                address: {
+                    street: form.address,
+                    city: form.city,
+                    state: form.state,
+                    country: form.country,
+                    zipCode: form.zipCode,
+                },
+                note: form.note,
+            })
+            setPlacedSummary(result)
+            setMe((prev) => prev ? { ...prev, wallet: result.walletBalance } : prev)
+            setCart((prev) => {
+                if(!prev) return prev
+                const purchasedIds = new Set(items.map((item) => item.productId))
+                const remainingItems = (prev.items || []).filter((item) => !purchasedIds.has(item.productId))
+                const totalQuantity = remainingItems.reduce((sum, item) => sum + (Number(item.quantity) || 0), 0)
+                const totalAmount = remainingItems.reduce((sum, item) => sum + (Number(item.lineTotal) || 0), 0)
+                return {
+                    ...prev,
+                    items: remainingItems,
+                    totalQuantity,
+                    totalAmount,
+                }
+            })
+            notifyCartChanged()
             setPlaced(true)
-        }catch{
-            setError("Checkout failed. Please try again.")
+        }catch(err){
+            setError(err?.response?.data?.message || "Checkout failed. Please try again.")
         }finally{
             setSubmitting(false)
         }
@@ -190,7 +224,10 @@ function Checkout(){
                         <div className="ck-success-badge">Order placed</div>
                         <h1 className="pd-title">Your order is confirmed.</h1>
                         <p className="pd-muted">
-                            {itemCount} item for ${total.toFixed(2)} is being prepared. A confirmation email will be sent shortly.
+                            {(placedSummary?.itemCount || itemCount)} item for ${Number(placedSummary?.totalAmount ?? total).toFixed(2)} is being prepared. A confirmation email will be sent shortly.
+                        </p>
+                        <p className="pd-muted">
+                            Wallet balance: ${Number(placedSummary?.walletBalance ?? me?.wallet ?? 0).toFixed(2)}
                         </p>
                         <div className="pd-actions">
                             <button className="mp-btn mp-btn-primary" type="button" onClick={() => navigate("/")}>
@@ -276,11 +313,11 @@ function Checkout(){
                                                 Credit Card
                                             </button>
                                             <button
-                                                className={`ck-pay-btn ${form.paymentMethod === "cash" ? "is-active" : ""}`}
+                                                className={`ck-pay-btn ${form.paymentMethod === "wallet" ? "is-active" : ""}`}
                                                 type="button"
-                                                onClick={() => onChange("paymentMethod", "cash")}
+                                                onClick={() => onChange("paymentMethod", "wallet")}
                                             >
-                                                Cash on Delivery
+                                                Wallet
                                             </button>
                                         </div>
 
@@ -307,7 +344,7 @@ function Checkout(){
                                             </div>
                                         ) : (
                                             <div className="ck-cash-note">
-                                                Pay when your order arrives. Please keep the exact amount ready if possible.
+                                                Available balance: ${Number(me?.wallet || 0).toFixed(2)}. Checkout will create a purchase transaction and deduct the order total from your wallet.
                                             </div>
                                         )}
                                     </div>

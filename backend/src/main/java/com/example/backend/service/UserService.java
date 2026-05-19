@@ -62,17 +62,6 @@ public class UserService {
         return toAddressDto(addressRepository.save(address));
     }
 
-    public User addFunds(String username, BigDecimal amount) {
-        User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("USER NOT FOUND"));
-
-        BigDecimal currentWallet = user.getWallet() != null ? user.getWallet() : BigDecimal.ZERO;
-        user.setWallet(currentWallet.add(amount));
-        user.setUpdatedAt(LocalDateTime.now());
-
-        return userRepository.save(user);
-    }
-
     private String trimToNull(String value){
         if(value == null) return null;
         String trimmed = value.trim();
