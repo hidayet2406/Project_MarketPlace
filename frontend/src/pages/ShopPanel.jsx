@@ -117,7 +117,6 @@ function ShopPanel(){
     }, [removeTarget])
 
     const approved = vendorRequest?.status === "APPROVED"
-
     const handleDeleteProduct = async (productId) => {
         if(deletingId) return
 
@@ -193,77 +192,87 @@ function ShopPanel(){
                     </section>
                 ) : (
                     <>
-                        <section className="pd-card">
-                            <div className="ud-head">
-                                <h1 className="pd-title" style={{ fontSize: 22 }}>{shop.name}</h1>
-                            </div>
+                        <div className="sp-layout">
+                            <section className="pd-card sp-info-panel">
+                                <div className="ud-head">
+                                    <h1 className="pd-title" style={{ fontSize: 22 }}>{shop.name}</h1>
+                                </div>
 
-                            <div className="ud-grid">
-                                <InfoRow label="Shop name" value={shop.name} />
-                                <InfoRow label="Slug" value={shop.slug} />
-                                <InfoRow label="Status" value={shop.status} />
-                                <InfoRow label="Description" value={shop.description} />
-                            </div>
-                        </section>
+                                <div className="sp-emblem" aria-hidden="true">
+                                    <div className="sp-emblem-mark">
+                                        <div className="sp-emblem-inner">{shop.name.charAt(0).toUpperCase()}</div>
+                                    </div>
+                                </div>
 
-                        <section className="pd-card">
-                            <div className="ud-head">
-                                <h2 className="pd-title" style={{ fontSize: 18 }}>Products</h2>
-                                <div className="pd-muted">Products currently attached to this shop.</div>
-                            </div>
+                                <div className="ud-grid">
+                                    <InfoRow label="Shop name" value={shop.name} />
+                                    <InfoRow label="Products" value={String(products.length)} />
+                                </div>
 
-                            
-    {flash ? <div className="pd-flash" style={flash.toLowerCase().includes("failed") || flash.toLowerCase().includes("please") ? { background: "#fff2f2", borderColor: "#f1c1c1", color: "#7a0b0b", marginBottom: 10 } : { marginBottom: 10 }}>{flash}</div> : null}
-                            <div className="pd-actions" style={{ marginBottom: 12 }}>
-                                <button className="mp-btn mp-btn-primary" type="button" onClick={() => navigate("/shop/products/new")}>
-                                    Add product
-                                </button>
-                            </div>
+                                <div className="ud-row sp-description-row">
+                                    <div className="ud-label">Description</div>
+                                    <div className="ud-value">{shop.description || "-"}</div>
+                                </div>
+                            </section>
 
-                            {products.length === 0 ? (
-                                <div className="pd-muted">No products yet.</div>
-                            ) : (
-                                <div style={{ display: "grid", gap: 10 }}>
-                                    {products.map((product) => (
-                                        <div key={product.id} className="ud-row">
-                                            <div style={{ display: "grid", gridTemplateColumns: "84px 1fr auto", gap: 12, alignItems: "center" }}>
-                                                <div style={{ width: 84, height: 84, borderRadius: 8, overflow: "hidden", border: "1px solid #d5d9d9", background: "#f3f3f3" }}>
-                                                    {product?.imagePath ? (
-                                                        <img
-                                                            src={resolveMediaUrl(product.imagePath)}
-                                                            alt={product.name}
-                                                            style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
-                                                        />
-                                                    ) : null}
-                                                </div>
-                                                <div style={{ display: "grid", gap: 6 }}>
-                                                    <div className="ud-value">{product.name}</div>
-                                                    <div className="pd-muted">{product.description || "-"}</div>
-                                                    <div className="pd-muted">
-                                                        Category: <b>{product?.category?.name || "-"}</b>
+                            <section className="pd-card sp-products-panel">
+                                <div className="ud-head">
+                                    <h2 className="pd-title" style={{ fontSize: 18 }}>Products</h2>
+                                    <div className="pd-muted">Products currently attached to this shop.</div>
+                                </div>
+
+                                {flash ? <div className="pd-flash" style={flash.toLowerCase().includes("failed") || flash.toLowerCase().includes("please") ? { background: "#fff2f2", borderColor: "#f1c1c1", color: "#7a0b0b", marginBottom: 10 } : { marginBottom: 10 }}>{flash}</div> : null}
+                                <div className="pd-actions" style={{ marginBottom: 12 }}>
+                                    <button className="mp-btn mp-btn-primary" type="button" onClick={() => navigate("/shop/products/new")}>
+                                        Add product
+                                    </button>
+                                </div>
+
+                                {products.length === 0 ? (
+                                    <div className="pd-muted">No products yet.</div>
+                                ) : (
+                                    <div style={{ display: "grid", gap: 10 }}>
+                                        {products.map((product) => (
+                                            <div key={product.id} className="ud-row">
+                                                <div style={{ display: "grid", gridTemplateColumns: "84px 1fr auto", gap: 12, alignItems: "center" }}>
+                                                    <div style={{ width: 84, height: 84, borderRadius: 8, overflow: "hidden", border: "1px solid #d5d9d9", background: "#f3f3f3" }}>
+                                                        {product?.imagePath ? (
+                                                            <img
+                                                                src={resolveMediaUrl(product.imagePath)}
+                                                                alt={product.name}
+                                                                style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+                                                            />
+                                                        ) : null}
+                                                    </div>
+                                                    <div style={{ display: "grid", gap: 6 }}>
+                                                        <div className="ud-value">{product.name}</div>
+                                                        <div className="pd-muted">{product.description || "-"}</div>
+                                                        <div className="pd-muted">
+                                                            Category: <b>{product?.category?.name || "-"}</b>
+                                                        </div>
+                                                    </div>
+                                                    <div style={{ textAlign: "right", display: "grid", gap: 6 }}>
+                                                        <div className="ud-value">${Number(product.price || 0).toFixed(2)}</div>
+                                                        <div className="pd-muted">Stock: {product.stock ?? "-"}</div>
+                                                        <button className="mp-btn mp-ghost-link" type="button" onClick={() => navigate(`/product/${product.id}`)}>
+                                                            Open
+                                                        </button>
+                                                        <button
+                                                            className="mp-btn mp-remove-btn"
+                                                            type="button"
+                                                            onClick={() => setRemoveTarget(product)}
+                                                            disabled={deletingId === product.id}
+                                                        >
+                                                            Remove
+                                                        </button>
                                                     </div>
                                                 </div>
-                                                <div style={{ textAlign: "right", display: "grid", gap: 6 }}>
-                                                    <div className="ud-value">${Number(product.price || 0).toFixed(2)}</div>
-                                                    <div className="pd-muted">Stock: {product.stock ?? "-"}</div>
-                                                    <button className="mp-btn mp-ghost-link" type="button" onClick={() => navigate(`/product/${product.id}`)}>
-                                                        Open
-                                                    </button>
-                                                    <button
-                                                        className="mp-btn mp-remove-btn"
-                                                        type="button"
-                                                        onClick={() => setRemoveTarget(product)}
-                                                        disabled={deletingId === product.id}
-                                                    >
-                                                        Remove
-                                                    </button>
-                                                </div>
                                             </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
-                        </section>
+                                        ))}
+                                    </div>
+                                )}
+                            </section>
+                        </div>
                     </>
                 )}
             </main>

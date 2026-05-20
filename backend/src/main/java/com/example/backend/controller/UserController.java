@@ -1,6 +1,7 @@
 package com.example.backend.controller;
 
 import com.example.backend.DTO.AddressDTO;
+import com.example.backend.DTO.UserOrderSummaryDTO;
 import com.example.backend.DTO.UserProfileUpdateDTO;
 import com.example.backend.DTO.VendorRequestDTO;
 import com.example.backend.entity.User;
@@ -14,8 +15,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.math.BigDecimal;
-import java.util.Map;
+import java.util.List;
 
 @RestController
 @RequestMapping("/user")
@@ -68,6 +68,14 @@ public class UserController {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "UNAUTHORIZED");
         }
         return userService.updateAddress(principal.getUsername(), addressDTO);
+    }
+
+    @GetMapping("/orders")
+    public List<UserOrderSummaryDTO> getOrders(@AuthenticationPrincipal UserDetails principal){
+        if (principal == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "UNAUTHORIZED");
+        }
+        return userService.getOrders(principal.getUsername());
     }
 
 

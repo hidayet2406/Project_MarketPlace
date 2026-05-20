@@ -27,7 +27,6 @@ function CreateShop(){
     const [saving, setSaving] = useState(false)
     const [form, setForm] = useState({
         name: "",
-        slug: "",
         description: ""
     })
 
@@ -85,7 +84,6 @@ function CreateShop(){
         try{
             await API.post("/shop", {
                 name: form.name,
-                slug: form.slug,
                 description: form.description
             })
             navigate("/shop/panel")
@@ -141,7 +139,7 @@ function CreateShop(){
                     <section className="pd-card">
                         <div className="ud-head">
                             <h1 className="pd-title" style={{ fontSize: 22 }}>Create your shop</h1>
-                            <div className="pd-muted">Set your seller storefront name, slug, and description.</div>
+                            <div className="pd-muted">Set your seller storefront name and description.</div>
                         </div>
 
                         {shop?.name ? (
@@ -159,10 +157,6 @@ function CreateShop(){
                                 <label className="ud-input-wrap">
                                     <span className="ud-label">Shop name</span>
                                     <input name="name" value={form.name} onChange={handleChange} placeholder="Example: Nova Home" />
-                                </label>
-                                <label className="ud-input-wrap">
-                                    <span className="ud-label">Slug</span>
-                                    <input name="slug" value={form.slug} onChange={handleChange} placeholder="example: nova-home" />
                                 </label>
                             </div>
 

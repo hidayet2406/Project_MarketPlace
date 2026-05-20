@@ -107,14 +107,6 @@ function ShopDetail(){
                                     <div className="ud-value">{shop.name}</div>
                                 </div>
                                 <div className="ud-row">
-                                    <div className="ud-label">Slug</div>
-                                    <div className="ud-value">{shop.slug}</div>
-                                </div>
-                                <div className="ud-row">
-                                    <div className="ud-label">Status</div>
-                                    <div className="ud-value">{shop.status || "-"}</div>
-                                </div>
-                                <div className="ud-row">
                                     <div className="ud-label">Description</div>
                                     <div className="ud-value">{shop.description || "-"}</div>
                                 </div>

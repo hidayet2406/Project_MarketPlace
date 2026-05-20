@@ -6,6 +6,7 @@ import UserMenu from "../components/UserMenu"
 import ActionToast from "../components/ActionToast"
 import useCartCount from "../hooks/useCartCount"
 import { notifyAuthChanged } from "../utils/authEvents"
+import { resolveMediaUrl } from "../utils/resolveMediaUrl"
 
 function CartIcon(props){
     return (
@@ -26,6 +27,15 @@ function Row({ label, value }){
     )
 }
 
+function formatMoney(value){
+    return `$${Number(value || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+}
+
+function formatOrderStatus(status){
+    if(!status) return "Pending"
+    return status.charAt(0) + status.slice(1).toLowerCase()
+}
+
 function getRoleLabel(role){
     if(!role) return "User"
     return role.charAt(0).toUpperCase() + role.slice(1).toLowerCase()
@@ -44,7 +54,6 @@ function UserDetail(){
     const [editing, setEditing] = useState(false)
     const [saving, setSaving] = useState(false)
     const [saveError, setSaveError] = useState("")
-    const [saveSuccess, setSaveSuccess] = useState("")
     const [toastMessage, setToastMessage] = useState("")
     const [form, setForm] = useState({
         firstName: "",
@@ -54,7 +63,6 @@ function UserDetail(){
     const [addressEditing, setAddressEditing] = useState(false)
     const [addressSaving, setAddressSaving] = useState(false)
     const [addressError, setAddressError] = useState("")
-    const [addressSuccess, setAddressSuccess] = useState("")
     const [addressForm, setAddressForm] = useState({
         street: "",
         city: "",
@@ -72,11 +80,11 @@ function UserDetail(){
     const [vendorRequest, setVendorRequest] = useState(null)
     const [vendorLoading, setVendorLoading] = useState(false)
     const [vendorError, setVendorError] = useState("")
-    const [vendorSuccess, setVendorSuccess] = useState("")
     const [shop, setShop] = useState(null)
     const [walletAmount, setWalletAmount] = useState("");
     const [walletLoading, setWalletLoading] = useState(false);
     const [walletError, setWalletError] = useState("");
+    const [orders, setOrders] = useState([])
 
 
     useEffect(() => {
@@ -94,11 +102,12 @@ function UserDetail(){
             setLoading(true)
             setError("")
             try{
-                const [meRes, vendorRes, shopRes, addressRes] = await Promise.all([
+                const [meRes, vendorRes, shopRes, addressRes, ordersRes] = await Promise.all([
                     API.get("/user/findMe"),
                     API.get("/user/vendor"),
                     API.get("/shop/my"),
-                    API.get("/user/address")
+                    API.get("/user/address"),
+                    API.get("/user/orders")
                 ])
                 if(!cancelled){
                     setMe(meRes.data)
@@ -118,6 +127,7 @@ function UserDetail(){
                     setSavedAddress(nextAddress)
                     setVendorRequest(vendorRes.data || null)
                     setShop(shopRes.data || null)
+                    setOrders(Array.isArray(ordersRes.data) ? ordersRes.data : [])
                 }
             }catch(err){
                 if(err?.response?.status === 401){
@@ -145,8 +155,6 @@ function UserDetail(){
 
         const timeout = window.setTimeout(() => {
             setToastMessage("")
-            setSaveSuccess("")
-            setAddressSuccess("")
         }, 1800)
 
         return () => window.clearTimeout(timeout)
@@ -168,7 +176,6 @@ function UserDetail(){
 
         setSaving(true)
         setSaveError("")
-        setSaveSuccess("")
 
         try{
             const res = await API.put("/user/profile", form)
@@ -179,7 +186,6 @@ function UserDetail(){
                 phone: res.data?.phone || ""
             })
             setEditing(false)
-            setSaveSuccess("Profile updated.")
             setToastMessage("Profile updated.")
         }catch(err){
             if(err?.response?.status === 401){
@@ -199,11 +205,10 @@ function UserDetail(){
         if(vendorLoading) return
         setVendorLoading(true)
         setVendorError("")
-        setVendorSuccess("")
         try{
             const res = await API.post("/user/vendor")
             setVendorRequest(res.data)
-            setVendorSuccess("Vendor request submitted.")
+            setToastMessage("Vendor request submitted.")
         }catch(err){
             if(err?.response?.status === 401){
                 localStorage.removeItem("token")
@@ -230,11 +235,12 @@ function UserDetail(){
         setWalletLoading(true);
         setWalletError("");
         try{
-            const res = await API.post("/user/wallet/deposit", { amount });
-            setMe(res.data);
+            await API.post("/transaction/wallet/deposit", { amount });
+            const meRes = await API.get("/user/findMe")
+            setMe(meRes.data);
             setWalletAmount("");
             setToastMessage("Funds added successfully.");
-        }catch(err){
+        }catch{
             setWalletError("Failed to add funds.");
         }finally{
             setWalletLoading(false);
@@ -247,7 +253,6 @@ function UserDetail(){
 
         setAddressSaving(true)
         setAddressError("")
-        setAddressSuccess("")
 
         try{
             const res = await API.put("/user/address", addressForm)
@@ -266,7 +271,6 @@ function UserDetail(){
                 zipCode: res.data?.zipCode || ""
             })
             setAddressEditing(false)
-            setAddressSuccess("Address updated.")
             setToastMessage("Address updated.")
         }catch(err){
             if(err?.response?.status === 401){
@@ -341,7 +345,7 @@ function UserDetail(){
                     </div>
                 ) : (
                     <>
-                        <section className="pd-card">
+                        <section className="pd-card ud-account-card">
                             <div className="ud-hero">
                                 <div className="ud-avatar" aria-hidden="true">{profileInitial}</div>
                                 <div className="ud-hero-copy">
@@ -428,7 +432,6 @@ function UserDetail(){
                                     <div className="pd-actions" style={{ marginTop: 12 }}>
                                         <button className="mp-btn mp-btn-primary" type="button" onClick={() => {
                                             setSaveError("")
-                                            setSaveSuccess("")
                                             setEditing(true)
                                         }}>
                                             {me?.firstName || me?.lastName || me?.phone ? "Edit profile" : "Complete profile"}
@@ -438,236 +441,280 @@ function UserDetail(){
                             )}
                         </section>
 
-                        
-                        <section className="pd-card">
-                            <div className="ud-head">
-                                <h2 className="pd-title" style={{ fontSize: 18 }}>Wallet</h2>
-                                <div className="pd-muted">Manage your balance for quick purchases.</div>
-                            </div>
-                            
-                            <div className="ud-grid">
-                                <div className="ud-row">
-                                    <div className="ud-label">Current Balance</div>
-                                    <div className="ud-value" style={{ fontSize: 24, fontWeight: 700, color: "#2d2d2d" }}>
-                                        ${(me?.wallet || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                                    </div>
-                                </div>
-                            </div>
-
-                            <form className="ud-form" style={{ marginTop: 20 }} onSubmit={handleDeposit}>
-                                <div style={{ display: "flex", gap: 10, alignItems: "flex-end" }}>
-                                    <label className="ud-input-wrap" style={{ flex: 1 }}>
-                                        <div className="ud-label" style={{ marginBottom: 4 }}>Add Funds</div>
-                                        <input
-                                            type="number"
-                                            step="0.01"
-                                            value={walletAmount}
-                                            onChange={(e) => setWalletAmount(e.target.value)}
-                                            placeholder="Enter amount (e.g. 50.00)"
-                                            aria-label="Deposit amount"
-                                        />
-                                    </label>
-                                    <button 
-                                        className="mp-btn mp-btn-primary" 
-                                        type="submit" 
-                                        disabled={walletLoading}
-                                        style={{ height: 42 }}
-                                    >
-                                        {walletLoading ? "Adding..." : "Add Funds"}
-                                    </button>
-                                </div>
-                                {walletError && (
-                                    <div className="pd-muted" style={{ color: "#d93025", marginTop: 8 }}>
-                                        {walletError}
-                                    </div>
-                                )}
-                            </form>
-                        </section>
-
-                        <section className="pd-card">
-                            <div className="ud-head">
-                                <h2 className="pd-title" style={{ fontSize: 18 }}>Address</h2>
-                                <div className="pd-muted">Manage your shipping address.</div>
-                            </div>
-
-                            {addressError ? (
-                                <div className="pd-flash" style={{ background: "#fff2f2", borderColor: "#f1c1c1", color: "#7a0b0b", marginBottom: 10 }}>
-                                    {addressError}
-                                </div>
-                            ) : null}
-
-                            
-
-                            {addressEditing ? (
-                                <form className="ud-form" onSubmit={handleAddressSave}>
-                                    <div className="ud-grid">
-                                        <label className="ud-input-wrap">
-                                            <input
-                                                name="street"
-                                                value={addressForm.street}
-                                                onChange={handleAddressFormChange}
-                                                placeholder="Street"
-                                                aria-label="Street"
-                                            />
-                                        </label>
-                                        <label className="ud-input-wrap">
-                                            <input
-                                                name="city"
-                                                value={addressForm.city}
-                                                onChange={handleAddressFormChange}
-                                                placeholder="City"
-                                                aria-label="City"
-                                            />
-                                        </label>
-                                        <label className="ud-input-wrap">
-                                            <input
-                                                name="state"
-                                                value={addressForm.state}
-                                                onChange={handleAddressFormChange}
-                                                placeholder="State"
-                                                aria-label="State"
-                                            />
-                                        </label>
-                                        <label className="ud-input-wrap">
-                                            <input
-                                                name="country"
-                                                value={addressForm.country}
-                                                onChange={handleAddressFormChange}
-                                                placeholder="Country"
-                                                aria-label="Country"
-                                            />
-                                        </label>
-                                        <label className="ud-input-wrap">
-                                            <input
-                                                name="zipCode"
-                                                value={addressForm.zipCode}
-                                                onChange={handleAddressFormChange}
-                                                placeholder="Zip code"
-                                                aria-label="Zip code"
-                                            />
-                                        </label>
+                        <div className="ud-layout">
+                            <div className="ud-main">
+                                <section className="pd-card">
+                                    <div className="ud-head">
+                                        <h2 className="pd-title" style={{ fontSize: 18 }}>Address</h2>
+                                        <div className="pd-muted">Manage your shipping address.</div>
                                     </div>
 
-                                    <div className="pd-actions" style={{ marginTop: 12 }}>
-                                        <button className="mp-btn mp-btn-primary" type="submit" disabled={addressSaving}>
-                                            {addressSaving ? "Saving..." : "Save address"}
-                                        </button>
-                                        <button
-                                            className="mp-btn mp-ghost-link"
-                                            type="button"
-                                            onClick={() => {
-                                                setAddressEditing(false)
-                                                setAddressError("")
-                                                setAddressForm(savedAddress)
-                                            }}
-                                        >
-                                            Cancel
-                                        </button>
-                                    </div>
-                                </form>
-                            ) : (
-                                <>
-                                    <div className="ud-grid">
-                                        <Row label="Street" value={addressForm.street} />
-                                        <Row label="City" value={addressForm.city} />
-                                        <Row label="State" value={addressForm.state} />
-                                        <Row label="Country" value={addressForm.country} />
-                                        <Row label="Zip code" value={addressForm.zipCode} />
-                                    </div>
-
-                                    <div className="pd-actions" style={{ marginTop: 12 }}>
-                                        <button className="mp-btn mp-btn-primary" type="button" onClick={() => {
-                                            setAddressError("")
-                                            setAddressSuccess("")
-                                            setAddressEditing(true)
-                                        }}>
-                                            {addressForm.street || addressForm.city || addressForm.state || addressForm.country || addressForm.zipCode ? "Edit address" : "Add address"}
-                                        </button>
-                                    </div>
-                                </>
-                            )}
-                        </section>
-
-                        {me?.role !== "ADMIN" ? (
-                            <section className="pd-card">
-                                <div className="ud-head">
-                                    <h2 className="pd-title" style={{ fontSize: 18 }}>Vendor request</h2>
-                                    <div className="pd-muted">Request access to sell products on NovaMart.</div>
-                                </div>
-
-                                {!vendorProfileComplete && !vendorRequest?.status ? (
-                                    <div className="pd-flash" style={{ background: "#fff7e6", borderColor: "#f1d2a3", color: "#7a4b00" }}>
-                                        Complete your {missingVendorProfileFields.join(", ")} before requesting vendor access.
-                                    </div>
-                                ) : null}
-
-                                {vendorRequest?.status ? (
-                                    <div className="pd-box" style={{ marginBottom: 10 }}>
-                                        <div className="pd-box-row">
-                                            <div><strong>Status:</strong> {vendorStatusLabel || "Approved"}</div>
-                                            {vendorRequestedAt ? <div><strong>Requested:</strong> {vendorRequestedAt}</div> : null}
+                                    {addressError ? (
+                                        <div className="pd-flash" style={{ background: "#fff2f2", borderColor: "#f1c1c1", color: "#7a0b0b", marginBottom: 10 }}>
+                                            {addressError}
                                         </div>
-                                    </div>
-                                ) : null}
-
-                                {vendorApproved ? (
-                                    <div className="pd-box" style={{ marginBottom: 10 }}>
-                                        <div className="pd-box-row">
-                                            <div><strong>Seller access:</strong> Approved</div>
-                                            <div>{shop?.name ? `Shop ready: ${shop.name}` : "You can create your shop now."}</div>
-                                        </div>
-                                    </div>
-                                ) : null}
-
-                                {vendorError ? (
-                                    <div className="pd-flash" style={{ background: "#fff2f2", borderColor: "#f1c1c1", color: "#7a0b0b" }}>
-                                        {vendorError}
-                                    </div>
-                                ) : null}
-
-                                
-
-                                <div className="pd-actions" style={{ marginTop: 10 }}>
-                                    {vendorApproved ? (
-                                        <button
-                                            className="mp-btn mp-btn-primary"
-                                            type="button"
-                                            onClick={() => navigate(shop?.name ? "/shop/panel" : "/shop/create")}
-                                        >
-                                            {shop?.name ? "Open shop panel" : "Create shop"}
-                                        </button>
-                                    ) : (
-                                        <button
-                                            className="mp-btn mp-btn-primary"
-                                            onClick={handleVendorRequest}
-                                            disabled={vendorLoading || !!vendorRequest?.status || !vendorProfileComplete}
-                                        >
-                                            {vendorLoading
-                                                ? "Requesting..."
-                                                : vendorRequest?.status
-                                                    ? "Request submitted"
-                                                    : !vendorProfileComplete
-                                                        ? "Complete profile first"
-                                                        : "Request vendor access"}
-                                        </button>
-                                    )}
-
-                                    {!vendorProfileComplete && !vendorRequest?.status ? (
-                                        <button
-                                            className="mp-btn mp-ghost-link"
-                                            type="button"
-                                            onClick={() => {
-                                                setSaveError("")
-                                                setSaveSuccess("")
-                                                setEditing(true)
-                                            }}
-                                        >
-                                            Complete profile
-                                        </button>
                                     ) : null}
-                                </div>
-                            </section>
-                        ) : null}
+
+                                    
+
+                                    {addressEditing ? (
+                                        <form className="ud-form" onSubmit={handleAddressSave}>
+                                            <div className="ud-grid">
+                                                <label className="ud-input-wrap">
+                                                    <input
+                                                        name="street"
+                                                        value={addressForm.street}
+                                                        onChange={handleAddressFormChange}
+                                                        placeholder="Street"
+                                                        aria-label="Street"
+                                                    />
+                                                </label>
+                                                <label className="ud-input-wrap">
+                                                    <input
+                                                        name="city"
+                                                        value={addressForm.city}
+                                                        onChange={handleAddressFormChange}
+                                                        placeholder="City"
+                                                        aria-label="City"
+                                                    />
+                                                </label>
+                                                <label className="ud-input-wrap">
+                                                    <input
+                                                        name="state"
+                                                        value={addressForm.state}
+                                                        onChange={handleAddressFormChange}
+                                                        placeholder="State"
+                                                        aria-label="State"
+                                                    />
+                                                </label>
+                                                <label className="ud-input-wrap">
+                                                    <input
+                                                        name="country"
+                                                        value={addressForm.country}
+                                                        onChange={handleAddressFormChange}
+                                                        placeholder="Country"
+                                                        aria-label="Country"
+                                                    />
+                                                </label>
+                                                <label className="ud-input-wrap">
+                                                    <input
+                                                        name="zipCode"
+                                                        value={addressForm.zipCode}
+                                                        onChange={handleAddressFormChange}
+                                                        placeholder="Zip code"
+                                                        aria-label="Zip code"
+                                                    />
+                                                </label>
+                                            </div>
+
+                                            <div className="pd-actions" style={{ marginTop: 12 }}>
+                                                <button className="mp-btn mp-btn-primary" type="submit" disabled={addressSaving}>
+                                                    {addressSaving ? "Saving..." : "Save address"}
+                                                </button>
+                                                <button
+                                                    className="mp-btn mp-ghost-link"
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setAddressEditing(false)
+                                                        setAddressError("")
+                                                        setAddressForm(savedAddress)
+                                                    }}
+                                                >
+                                                    Cancel
+                                                </button>
+                                            </div>
+                                        </form>
+                                    ) : (
+                                        <>
+                                            <div className="ud-grid">
+                                                <Row label="Street" value={addressForm.street} />
+                                                <Row label="City" value={addressForm.city} />
+                                                <Row label="State" value={addressForm.state} />
+                                                <Row label="Country" value={addressForm.country} />
+                                                <Row label="Zip code" value={addressForm.zipCode} />
+                                            </div>
+
+                                            <div className="pd-actions" style={{ marginTop: 12 }}>
+                                                <button className="mp-btn mp-btn-primary" type="button" onClick={() => {
+                                                    setAddressError("")
+                                                    setAddressEditing(true)
+                                                }}>
+                                                    {addressForm.street || addressForm.city || addressForm.state || addressForm.country || addressForm.zipCode ? "Edit address" : "Add address"}
+                                                </button>
+                                            </div>
+                                        </>
+                                    )}
+                                </section>
+
+                                <section className="pd-card">
+                                    <div className="ud-head">
+                                        <h2 className="pd-title" style={{ fontSize: 18 }}>My orders</h2>
+                                        <div className="pd-muted">{orders.length} order{orders.length === 1 ? "" : "s"}</div>
+                                    </div>
+
+                                    {orders.length === 0 ? (
+                                        <div className="pd-muted">No orders yet.</div>
+                                    ) : (
+                                        <div className="ud-orders">
+                                            {orders.map((order) => (
+                                                <article className="ud-order" key={order.orderId}>
+                                                    <div className="ud-order-top">
+                                                        <div>
+                                                            <div className="ud-order-id">Order #{order.orderId}</div>
+                                                            <div className="pd-muted">
+                                                                {order.createdAt ? new Date(order.createdAt).toLocaleString() : "-"}
+                                                            </div>
+                                                        </div>
+                                                        <div className={`ud-order-status ud-order-status-${String(order.status || "").toLowerCase()}`}>
+                                                            {formatOrderStatus(order.status)}
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="ud-order-meta">
+                                                        <div><strong>Total:</strong> {formatMoney(order.totalAmount)}</div>
+                                                        <div><strong>Ship to:</strong> {[order.shippingCity, order.shippingCountry].filter(Boolean).join(", ") || "-"}</div>
+                                                    </div>
+
+                                                    <div className="ud-order-items">
+                                                        {(order.items || []).map((item, index) => (
+                                                            <div className="ud-order-item" key={`${order.orderId}-${item.productId || index}`}>
+                                                                <div className="ud-order-item-media">
+                                                                    {item.imagePath ? <img src={resolveMediaUrl(item.imagePath)} alt={item.productName} /> : null}
+                                                                </div>
+                                                                <span className="ud-order-item-name">{item.productName}</span>
+                                                                <span className="pd-muted">x{item.quantity}</span>
+                                                                <span className="ud-order-item-price">{formatMoney(item.price)}</span>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </article>
+                                            ))}
+                                        </div>
+                                    )}
+                                </section>
+                            </div>
+
+                            <aside className="ud-side">
+                                <section className="pd-card">
+                                    <div className="ud-head">
+                                        <h2 className="pd-title" style={{ fontSize: 18 }}>Wallet</h2>
+                                        <div className="pd-muted">Quick balance top-up.</div>
+                                    </div>
+
+                                    <div className="ud-balance-card">
+                                        <div className="ud-label">Current balance</div>
+                                        <div className="ud-balance-amount">
+                                            {formatMoney(me?.wallet)}
+                                        </div>
+                                    </div>
+
+                                    <form className="ud-form" style={{ marginTop: 14 }} onSubmit={handleDeposit}>
+                                        <label className="ud-input-wrap">
+                                            <input
+                                                type="number"
+                                                step="0.01"
+                                                value={walletAmount}
+                                                onChange={(e) => setWalletAmount(e.target.value)}
+                                                placeholder="Amount"
+                                                aria-label="Deposit amount"
+                                            />
+                                        </label>
+                                        <button
+                                            className="mp-btn mp-btn-primary"
+                                            type="submit"
+                                            disabled={walletLoading}
+                                        >
+                                            {walletLoading ? "Adding..." : "Add funds"}
+                                        </button>
+                                        {walletError && (
+                                            <div className="pd-muted" style={{ color: "#d93025" }}>
+                                                {walletError}
+                                            </div>
+                                        )}
+                                    </form>
+                                </section>
+
+                                {me?.role !== "ADMIN" ? (
+                                    <section className="pd-card">
+                                        <div className="ud-head">
+                                            <h2 className="pd-title" style={{ fontSize: 18 }}>Vendor request</h2>
+                                            <div className="pd-muted">Request access to sell products on NovaMart.</div>
+                                        </div>
+
+                                        {!vendorProfileComplete && !vendorRequest?.status ? (
+                                            <div className="pd-flash" style={{ background: "#fff7e6", borderColor: "#f1d2a3", color: "#7a4b00" }}>
+                                                Complete your {missingVendorProfileFields.join(", ")} before requesting vendor access.
+                                            </div>
+                                        ) : null}
+
+                                        {vendorRequest?.status ? (
+                                            <div className="pd-box" style={{ marginBottom: 10 }}>
+                                                <div className="pd-box-row">
+                                                    <div><strong>Status:</strong> {vendorStatusLabel || "Approved"}</div>
+                                                    {vendorRequestedAt ? <div><strong>Requested:</strong> {vendorRequestedAt}</div> : null}
+                                                </div>
+                                            </div>
+                                        ) : null}
+
+                                        {vendorApproved ? (
+                                            <div className="pd-box" style={{ marginBottom: 10 }}>
+                                                <div className="pd-box-row">
+                                                    <div><strong>Seller access:</strong> Approved</div>
+                                                    <div>{shop?.name ? `Shop ready: ${shop.name}` : "You can create your shop now."}</div>
+                                                </div>
+                                            </div>
+                                        ) : null}
+
+                                        {vendorError ? (
+                                            <div className="pd-flash" style={{ background: "#fff2f2", borderColor: "#f1c1c1", color: "#7a0b0b" }}>
+                                                {vendorError}
+                                            </div>
+                                        ) : null}
+
+                                        
+
+                                        <div className="pd-actions" style={{ marginTop: 10 }}>
+                                            {vendorApproved ? (
+                                                <button
+                                                    className="mp-btn mp-btn-primary"
+                                                    type="button"
+                                                    onClick={() => navigate(shop?.name ? "/shop/panel" : "/shop/create")}
+                                                >
+                                                    {shop?.name ? "Open shop panel" : "Create shop"}
+                                                </button>
+                                            ) : (
+                                                <button
+                                                    className="mp-btn mp-btn-primary"
+                                                    onClick={handleVendorRequest}
+                                                    disabled={vendorLoading || !!vendorRequest?.status || !vendorProfileComplete}
+                                                >
+                                                    {vendorLoading
+                                                        ? "Requesting..."
+                                                        : vendorRequest?.status
+                                                            ? "Request submitted"
+                                                            : !vendorProfileComplete
+                                                                ? "Complete profile first"
+                                                                : "Request vendor access"}
+                                                </button>
+                                            )}
+
+                                            {!vendorProfileComplete && !vendorRequest?.status ? (
+                                                <button
+                                                    className="mp-btn mp-ghost-link"
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setSaveError("")
+                                                        setEditing(true)
+                                                    }}
+                                                >
+                                                    Complete profile
+                                                </button>
+                                            ) : null}
+                                        </div>
+                                    </section>
+                                ) : null}
+                            </aside>
+                        </div>
                     </>
                 )}
 

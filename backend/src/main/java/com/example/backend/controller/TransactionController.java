@@ -2,6 +2,7 @@ package com.example.backend.controller;
 
 import com.example.backend.DTO.CheckoutRequestDTO;
 import com.example.backend.DTO.CheckoutResponseDTO;
+import com.example.backend.DTO.WalletAmountDTO;
 import com.example.backend.entity.Transaction;
 import com.example.backend.service.TransactionService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,7 +27,8 @@ public class TransactionController {
     @PostMapping("/wallet/deposit")
     public Transaction deposit(
             @AuthenticationPrincipal UserDetails principal,
-            @RequestBody BigDecimal amount) {
+            @RequestBody WalletAmountDTO request) {
+        BigDecimal amount = request != null ? request.getAmount() : null;
         if (principal == null) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "UNAUTHORIZED");
         }
@@ -38,7 +40,8 @@ public class TransactionController {
 
     @PostMapping("/wallet/withdraw")
     public Transaction withdraw(@AuthenticationPrincipal UserDetails principal,
-                                @RequestBody BigDecimal amount) {
+                                @RequestBody WalletAmountDTO request) {
+        BigDecimal amount = request != null ? request.getAmount() : null;
 
         if (principal == null) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "UNAUTHORIZED");

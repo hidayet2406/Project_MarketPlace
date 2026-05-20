@@ -58,6 +58,9 @@ public class ProductController {
         return reviewService.upsertReview(id, principal.getUsername(), request);
     }
 
-
-
+    @GetMapping("/{id}/can-review")
+    public boolean canReview(@PathVariable Long id, @AuthenticationPrincipal UserDetails principal){
+        if(principal == null) return false;
+        return reviewService.canUserReviewProduct(id, principal.getUsername());
+    }
 }

@@ -41,7 +41,7 @@ function Cart(){
         if(items.length > 0 && selectedIds.length === 0){
             setSelectedIds(items.map(it => it.productId))
         }
-    }, [items])
+    }, [items, selectedIds.length])
 
     const selectedItems = useMemo(() => {
         return items.filter(it => selectedIds.includes(it.productId))

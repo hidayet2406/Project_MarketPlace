@@ -1,13 +1,14 @@
 import { useEffect, useMemo, useState } from "react"
 import { Link, useNavigate, useParams } from "react-router-dom"
 import "../styles/main.css"
-import { getProduct } from "../api/products"
+import { canReviewProduct, getProduct } from "../api/products"
 import { addCartItem } from "../api/cart"
 import { addProductReview, getProductReviews } from "../api/reviews"
 import { notifyCartChanged } from "../utils/cartEvents"
 import useCartCount from "../hooks/useCartCount"
 import useMe from "../hooks/useMe"
 import UserMenu from "../components/UserMenu"
+import ActionToast from "../components/ActionToast"
 import { resolveMediaUrl } from "../utils/resolveMediaUrl"
 
 function MagnifierIcon(props){
@@ -97,8 +98,15 @@ function ProductDetail(){
     const [text, setText] = useState("")
     const [reviews, setReviews] = useState([])
     const [reviewError, setReviewError] = useState("")
+    const [canReview, setCanReview] = useState(false)
 
     const categoryName = product?.category?.name || ""
+    const signedIn = Boolean(me?.username && localStorage.getItem("token"))
+    const ownProduct = signedIn && Boolean(
+        me?.username &&
+        product?.shop?.vendor?.user?.username &&
+        String(product.shop.vendor.user.username).toLowerCase() === String(me.username).toLowerCase()
+    )
 
     useEffect(() => {
         let cancelled = false
@@ -147,17 +155,41 @@ function ProductDetail(){
         return () => { cancelled = true }
     }, [product?.id])
 
+    useEffect(() => {
+        let cancelled = false
+
+        const loadReviewPermission = async () => {
+            if(!product?.id || !signedIn || ownProduct){
+                if(!cancelled) setCanReview(false)
+                return
+            }
+
+            try{
+                const allowed = await canReviewProduct(product.id)
+                if(!cancelled) setCanReview(Boolean(allowed))
+            }catch{
+                if(!cancelled) setCanReview(false)
+            }
+        }
+
+        loadReviewPermission()
+        return () => { cancelled = true }
+    }, [ownProduct, product?.id, signedIn])
+
+    useEffect(() => {
+        if(!flash) return undefined
+
+        const timeout = window.setTimeout(() => {
+            setFlash("")
+        }, 1800)
+
+        return () => window.clearTimeout(timeout)
+    }, [flash])
+
     const stock = useMemo(() => {
         const n = Number(product?.stock)
         return Number.isFinite(n) ? n : null
     }, [product?.stock])
-
-    const signedIn = Boolean(me?.username && localStorage.getItem("token"))
-    const ownProduct = signedIn && Boolean(
-        me?.username &&
-        product?.shop?.vendor?.user?.username &&
-        String(product.shop.vendor.user.username).toLowerCase() === String(me.username).toLowerCase()
-    )
 
     const avgRating = useMemo(() => {
         if(!reviews.length) return 0
@@ -201,6 +233,11 @@ function ProductDetail(){
 
         if(ownProduct){
             setReviewError("You cannot review your own product.")
+            return
+        }
+
+        if(!canReview){
+            setReviewError("Only users who purchased this product can review it.")
             return
         }
 
@@ -310,8 +347,6 @@ function ProductDetail(){
                     <span className="pd-crumb pd-crumb-current">{product.name}</span>
                 </nav>
 
-                {flash ? <div className="pd-flash" role="status">{flash}</div> : null}
-
                 <section className="pd-card">
                     <div className="pd-grid">
                         <div className="pd-img" data-tone="cool">
@@ -417,43 +452,33 @@ function ProductDetail(){
                         <div className="pd-muted">Share your experience.</div>
                     </div>
 
-                    {ownProduct ? (
-                        <div className="pd-flash" style={{ background: "#fff2f2", borderColor: "#f1c1c1", color: "#7a0b0b", marginBottom: 10 }}>
-                            You cannot review your own product.
-                        </div>
-                    ) : null}
-
                     {reviewError ? (
                         <div className="pd-flash" style={{ background: "#fff2f2", borderColor: "#f1c1c1", color: "#7a0b0b", marginBottom: 10 }}>
                             {reviewError}
                         </div>
                     ) : null}
 
-                    <form className="pd-form" onSubmit={onSubmitReview}>
-                        <div className="pd-form-row">
-                            <div className="pd-reviewer">
-                                <div className="pd-reviewer-label">User</div>
-                                {signedIn ? (
+                    {signedIn && canReview && !ownProduct ? (
+                        <form className="pd-form" onSubmit={onSubmitReview}>
+                            <div className="pd-form-row">
+                                <div className="pd-reviewer">
+                                    <div className="pd-reviewer-label">User</div>
                                     <div className="pd-reviewer-name">{me.username}</div>
-                                ) : (
-                                    <div className="pd-reviewer-cta">
-                                        <span className="pd-muted">Authentication required to write a review.</span>
-                                    </div>
-                                )}
+                                </div>
+                                <div className="pd-ratingpick">
+                                    <div className="pd-reviewer-label">Rating</div>
+                                    <Stars value={rating} onChange={(n) => setRating(n)} label="Select rating" />
+                                </div>
                             </div>
-                            <div className="pd-ratingpick">
-                                <div className="pd-reviewer-label">Rating</div>
-                                <Stars value={rating} onChange={(n) => setRating(n)} readOnly={!signedIn || ownProduct} label="Select rating" />
+                            <label>
+                                Comment
+                                <textarea value={text} onChange={(e) => setText(e.target.value)} placeholder="Write your review..." rows={4} />
+                            </label>
+                            <div className="pd-form-actions">
+                                <button className="mp-btn mp-btn-primary" type="submit">Submit review</button>
                             </div>
-                        </div>
-                        <label>
-                            Comment
-                            <textarea value={text} onChange={(e) => setText(e.target.value)} placeholder={ownProduct ? "You cannot review your own product." : signedIn ? "Write your review..." : "Authentication required to write a review..."} rows={4} disabled={!signedIn || ownProduct} />
-                        </label>
-                        <div className="pd-form-actions">
-                            <button className="mp-btn mp-btn-primary" type="submit" disabled={!signedIn || ownProduct}>Submit review</button>
-                        </div>
-                    </form>
+                        </form>
+                    ) : null}
 
                     <div className="pd-review-list" aria-live="polite">
                         {reviews.length === 0 ? (
@@ -481,6 +506,8 @@ function ProductDetail(){
                     </div>
                 </footer>
             </main>
+
+            <ActionToast message={flash} onClose={() => setFlash("")} />
         </div>
     )
 }
