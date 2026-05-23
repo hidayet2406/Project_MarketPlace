@@ -210,6 +210,11 @@ function ProductDetail(){
             return
         }
 
+        if(ownProduct){
+            alert("You cannot add your own product to cart.")
+            return
+        }
+
         try{
             await addCartItem(product.id, qty)
             notifyCartChanged()
@@ -430,10 +435,14 @@ function ProductDetail(){
                                     className="mp-btn mp-btn-primary"
                                     type="button"
                                     onClick={onAddToCart}
-                                    disabled={stock != null ? stock <= 0 : false}
-                                    title={stock != null && stock <= 0 ? "Out of stock" : ""}
+                                    disabled={ownProduct || (stock != null ? stock <= 0 : false)}
+                                    title={
+                                        ownProduct
+                                            ? "You cannot add your own product to cart"
+                                            : (stock != null && stock <= 0 ? "Out of stock" : "")
+                                    }
                                 >
-                                    Add to cart
+                                    {ownProduct ? "Own product" : "Add to cart"}
                                 </button>
                                 {ownProduct ? (
                                     <button className="mp-btn mp-ghost-link" type="button" onClick={() => navigate(`/shop/products/${product.id}/edit`)}>

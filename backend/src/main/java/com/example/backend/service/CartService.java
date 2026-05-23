@@ -51,6 +51,8 @@ public class CartService {
         Product product = productRepository.findById(request.getProductId())
                 .orElseThrow(() -> new RuntimeException("PRODUCT NOT FOUND"));
 
+        ensureNotOwnProduct(username, product);
+
         Integer stock = product.getStock();
         if(stock != null && stock <= 0){
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Out of stock");
@@ -93,6 +95,8 @@ public class CartService {
         Product product = productRepository.findById(request.getProductId())
                 .orElseThrow(() -> new RuntimeException("PRODUCT NOT FOUND"));
 
+        ensureNotOwnProduct(username, product);
+
         Integer stock = product.getStock();
         if(stock != null && qty > stock){
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Not enough stock");
@@ -133,6 +137,21 @@ public class CartService {
                     cart.setCartItems(new ArrayList<>());
                     return cartRepository.save(cart);
                 });
+    }
+
+    private void ensureNotOwnProduct(String username, Product product){
+        if(product == null
+                || product.getShop() == null
+                || product.getShop().getVendor() == null
+                || product.getShop().getVendor().getUser() == null
+                || product.getShop().getVendor().getUser().getUsername() == null){
+            return;
+        }
+
+        String ownerUsername = product.getShop().getVendor().getUser().getUsername();
+        if(ownerUsername.equalsIgnoreCase(username)){
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You cannot add your own product to cart");
+        }
     }
 
     private CartResponseDTO toResponse(Cart cart){

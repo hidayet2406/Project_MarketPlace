@@ -26,12 +26,13 @@ const initialForm = {
     address: "",
     zipCode: "",
     note: "",
-    cardName: "",
     cardNumber: "",
     expiry: "",
     cvc: "",
     paymentMethod: "wallet",
 }
+
+const SHIPPING_FEE = 3
 
 function Checkout(){
     const navigate = useNavigate()
@@ -116,7 +117,7 @@ function Checkout(){
         return items.reduce((sum, item) => sum + (Number(item.lineTotal) || 0), 0)
     }, [items])
 
-    const shipping = subtotal >= 150 || subtotal === 0 ? 0 : 12.9
+    const shipping = items.length === 0 ? 0 : SHIPPING_FEE
     const total = subtotal + shipping
 
     const itemCount = useMemo(() => {
@@ -135,7 +136,7 @@ function Checkout(){
         }
 
         if(form.paymentMethod === "card"){
-            setError("Card payments are not integrated yet. Please use wallet.")
+            setError(`Card payments are not integrated yet. Total still includes a fixed cargo fee of $${SHIPPING_FEE.toFixed(2)}.`)
             return
         }
 
@@ -226,9 +227,6 @@ function Checkout(){
                         <p className="pd-muted">
                             {(placedSummary?.itemCount || itemCount)} item for ${Number(placedSummary?.totalAmount ?? total).toFixed(2)} is being prepared. A confirmation email will be sent shortly.
                         </p>
-                        <p className="pd-muted">
-                            Wallet balance: ${Number(placedSummary?.walletBalance ?? me?.wallet ?? 0).toFixed(2)}
-                        </p>
                         <div className="pd-actions">
                             <button className="mp-btn mp-btn-primary" type="button" onClick={() => navigate("/")}>
                                 Back to home
@@ -252,7 +250,7 @@ function Checkout(){
                                     <div className="ck-section-head">
                                         <div>
                                             <h1 className="pd-title">Checkout</h1>
-                                            <p className="pd-muted">Complete delivery and payment details in one step.</p>
+                                            <p className="pd-muted">Complete delivery details and review the fixed cargo charge.</p>
                                         </div>
                                         <div className="ck-step">Secure checkout</div>
                                     </div>
@@ -324,10 +322,6 @@ function Checkout(){
                                         {form.paymentMethod === "card" ? (
                                             <div className="ck-form-grid">
                                                 <label>
-                                                    <span>Name on card</span>
-                                                    <input required value={form.cardName} onChange={(e) => onChange("cardName", e.target.value)} />
-                                                </label>
-                                                <label>
                                                     <span>Card number</span>
                                                     <input required inputMode="numeric" value={form.cardNumber} onChange={(e) => onChange("cardNumber", e.target.value)} />
                                                 </label>
@@ -344,7 +338,7 @@ function Checkout(){
                                             </div>
                                         ) : (
                                             <div className="ck-cash-note">
-                                                Available balance: ${Number(me?.wallet || 0).toFixed(2)}. Checkout will create a purchase transaction and deduct the order total from your wallet.
+                                                Available balance: ${Number(me?.wallet || 0).toFixed(2)}. The order total includes product prices plus a fixed cargo fee of ${SHIPPING_FEE.toFixed(2)}.
                                             </div>
                                         )}
                                     </div>
@@ -386,12 +380,8 @@ function Checkout(){
                                             <b>{itemCount}</b>
                                         </div>
                                         <div className="ct-sum-row">
-                                            <span className="pd-muted">Subtotal</span>
-                                            <b>${subtotal.toFixed(2)}</b>
-                                        </div>
-                                        <div className="ct-sum-row">
                                             <span className="pd-muted">Shipping</span>
-                                            <b>{shipping === 0 ? "Free" : `$${shipping.toFixed(2)}`}</b>
+                                            <b>${shipping.toFixed(2)}</b>
                                         </div>
                                         <div className="ck-total-row">
                                             <span>Total</span>

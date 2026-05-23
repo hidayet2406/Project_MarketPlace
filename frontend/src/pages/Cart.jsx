@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { Link, useNavigate } from "react-router-dom"
 import "../styles/main.css"
 import { getCart, removeCartItem, setCartItem } from "../api/cart"
@@ -28,6 +28,7 @@ function Cart(){
     const [cart, setCart] = useState(null)
     const [busyId, setBusyId] = useState(null)
     const [selectedIds, setSelectedIds] = useState([])
+    const didInitSelection = useRef(false)
 
     const signedIn = Boolean(localStorage.getItem("token"))
 
@@ -36,12 +37,25 @@ function Cart(){
         return Array.isArray(list) ? list : []
     }, [cart])
 
-    // Automatically select all items when cart loads for the first time
+    // Select all only once on the first successful cart load.
+    // After that, preserve user choice and only drop ids that no longer exist.
     useEffect(() => {
-        if(items.length > 0 && selectedIds.length === 0){
-            setSelectedIds(items.map(it => it.productId))
+        if(items.length === 0){
+            setSelectedIds([])
+            didInitSelection.current = false
+            return
         }
-    }, [items, selectedIds.length])
+
+        const itemIds = items.map((it) => it.productId)
+
+        if(!didInitSelection.current){
+            setSelectedIds(itemIds)
+            didInitSelection.current = true
+            return
+        }
+
+        setSelectedIds((prev) => prev.filter((id) => itemIds.includes(id)))
+    }, [items])
 
     const selectedItems = useMemo(() => {
         return items.filter(it => selectedIds.includes(it.productId))
