@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react"
+import { useNavigate } from "react-router-dom"
 import API from "../api/api"
 import AdminLayout from "../components/AdminLayout"
 import { notifyAuthChanged } from "../utils/authEvents"
@@ -6,6 +7,7 @@ import { notifyAuthChanged } from "../utils/authEvents"
 const SHOP_STATUSES = ["PENDING", "ACTIVE", "SUSPENDED"]
 
 export default function AdminShops(){
+    const navigate = useNavigate()
     const [shops, setShops] = useState([])
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState("")
@@ -162,22 +164,43 @@ export default function AdminShops(){
                         <div className="pd-muted">No shops match the current filter.</div>
                     ) : (
                         filteredShops.map((shop) => (
-                            <article key={shop.id} className="ad-list-card">
-                                <div className="ad-list-main">
-                                    <div className="ad-list-title">{shop.name || "-"}</div>
-                                    <div className="ad-list-meta">Slug: {shop.slug || "-"}</div>
-                                    <div className="ad-list-meta">Vendor: {shop?.vendor?.user?.username || "-"}</div>
-                                    <div className="ad-list-meta">{shop.description || "No description"}</div>
-                                </div>
-                                <div className="ad-list-side">
-                                    <div className={`ad-pill ad-pill-${String(shop?.status || "").toLowerCase()}`}>{shop?.status || "-"}</div>
+                            <article key={shop.id} className="ad-user-card">
+                                <button
+                                    type="button"
+                                    className="ad-user-main"
+                                    onClick={() => {
+                                        if(shop?.slug) navigate(`/shop/${encodeURIComponent(shop.slug)}`)
+                                    }}
+                                >
+                                    <div className="ad-user-mainline">
+                                        <div className="ad-user-copy">
+                                            <div className="ad-list-title">{shop.name || "-"}</div>
+                                            <div className="ad-list-meta">Vendor: {shop?.vendor?.user?.username || "-"}</div>
+                                            <div className="ad-list-meta">{shop?.vendor?.user?.email || "-"}</div>
+                                            <div className="ad-list-meta">{shop.description || "No description"}</div>
+                                        </div>
+                                        <div className="ad-user-side">
+                                            <div className={`ad-pill ad-pill-${String(shop?.status || "").toLowerCase()}`}>{shop?.status || "-"}</div>
+                                            <div className="ad-list-meta">Slug: {shop.slug || "-"}</div>
+                                        </div>
+                                    </div>
+                                </button>
+
+                                <div className="ad-user-footer">
+                                    <div className="ad-user-summary">
+                                        <span className="ad-user-summary-item">Vendor: {shop?.vendor?.user?.username || "-"}</span>
+                                        <span className="ad-user-summary-item">Status: {shop?.status || "-"}</span>
+                                    </div>
                                     <div className="ad-status-row ad-status-row-compact">
                                         {SHOP_STATUSES.map((status) => (
                                             <button
                                                 key={status}
                                                 className="mp-btn mp-ghost-link"
                                                 type="button"
-                                                onClick={() => handleShopStatus(shop.id, status)}
+                                                onClick={(event) => {
+                                                    event.stopPropagation()
+                                                    handleShopStatus(shop.id, status)
+                                                }}
                                                 disabled={updatingId === shop.id || shop?.status === status}
                                             >
                                                 {status}
@@ -186,7 +209,10 @@ export default function AdminShops(){
                                         <button
                                             className="mp-btn mp-remove-btn"
                                             type="button"
-                                            onClick={() => handleDeleteShop(shop.id)}
+                                            onClick={(event) => {
+                                                event.stopPropagation()
+                                                handleDeleteShop(shop.id)
+                                            }}
                                             disabled={deletingId === shop.id}
                                         >
                                             {deletingId === shop.id ? "Deleting..." : "Delete"}

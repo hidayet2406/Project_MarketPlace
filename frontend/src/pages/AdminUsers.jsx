@@ -4,8 +4,18 @@ import API from "../api/api"
 import AdminLayout from "../components/AdminLayout"
 import ActionToast from "../components/ActionToast"
 import { notifyAuthChanged } from "../utils/authEvents"
+import { resolveMediaUrl } from "../utils/resolveMediaUrl"
 
-function UserDetailDialog({ user, onClose }){
+function formatMoney(value){
+    return `$${Number(value || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+}
+
+function formatOrderStatus(status){
+    if(!status) return "Pending"
+    return status.charAt(0) + status.slice(1).toLowerCase()
+}
+
+function UserDetailDialog({ user, orders, ordersLoading, ordersError, onClose }){
     if(!user || typeof document === "undefined") return null
 
     return createPortal(
@@ -18,46 +28,105 @@ function UserDetailDialog({ user, onClose }){
         >
             <div className="mp-modal" role="dialog" aria-modal="true" aria-label="User details">
                 <div className="mp-modal-title">User details</div>
-                <div className="ad-detail-grid">
-                    <div className="ad-detail-row">
-                        <span className="ad-detail-label">Username</span>
-                        <span className="ad-detail-value">{user.username || "-"}</span>
+                <div className="ad-user-detail-layout">
+                    <div className="ad-user-detail-col">
+                        <div className="ad-detail-grid">
+                            <div className="ad-detail-row">
+                                <span className="ad-detail-label">Username</span>
+                                <span className="ad-detail-value">{user.username || "-"}</span>
+                            </div>
+                            <div className="ad-detail-row">
+                                <span className="ad-detail-label">Email</span>
+                                <span className="ad-detail-value">{user.email || "-"}</span>
+                            </div>
+                            <div className="ad-detail-row">
+                                <span className="ad-detail-label">First name</span>
+                                <span className="ad-detail-value">{user.firstName || "-"}</span>
+                            </div>
+                            <div className="ad-detail-row">
+                                <span className="ad-detail-label">Last name</span>
+                                <span className="ad-detail-value">{user.lastName || "-"}</span>
+                            </div>
+                            <div className="ad-detail-row">
+                                <span className="ad-detail-label">Phone</span>
+                                <span className="ad-detail-value">{user.phone || "-"}</span>
+                            </div>
+                            <div className="ad-detail-row">
+                                <span className="ad-detail-label">Role</span>
+                                <span className="ad-detail-value">{user.role || "-"}</span>
+                            </div>
+                            <div className="ad-detail-row">
+                                <span className="ad-detail-label">Wallet</span>
+                                <span className="ad-detail-value">{user.wallet ?? "-"}</span>
+                            </div>
+                            <div className="ad-detail-row">
+                                <span className="ad-detail-label">Enabled</span>
+                                <span className="ad-detail-value">{String(Boolean(user.enabled))}</span>
+                            </div>
+                            <div className="ad-detail-row">
+                                <span className="ad-detail-label">Email verified</span>
+                                <span className="ad-detail-value">{String(Boolean(user.emailVerified))}</span>
+                            </div>
+                            <div className="ad-detail-row">
+                                <span className="ad-detail-label">Created</span>
+                                <span className="ad-detail-value">{user.createdAt ? new Date(user.createdAt).toLocaleString() : "-"}</span>
+                            </div>
+                        </div>
                     </div>
-                    <div className="ad-detail-row">
-                        <span className="ad-detail-label">Email</span>
-                        <span className="ad-detail-value">{user.email || "-"}</span>
-                    </div>
-                    <div className="ad-detail-row">
-                        <span className="ad-detail-label">First name</span>
-                        <span className="ad-detail-value">{user.firstName || "-"}</span>
-                    </div>
-                    <div className="ad-detail-row">
-                        <span className="ad-detail-label">Last name</span>
-                        <span className="ad-detail-value">{user.lastName || "-"}</span>
-                    </div>
-                    <div className="ad-detail-row">
-                        <span className="ad-detail-label">Phone</span>
-                        <span className="ad-detail-value">{user.phone || "-"}</span>
-                    </div>
-                    <div className="ad-detail-row">
-                        <span className="ad-detail-label">Role</span>
-                        <span className="ad-detail-value">{user.role || "-"}</span>
-                    </div>
-                    <div className="ad-detail-row">
-                        <span className="ad-detail-label">Wallet</span>
-                        <span className="ad-detail-value">{user.wallet ?? "-"}</span>
-                    </div>
-                    <div className="ad-detail-row">
-                        <span className="ad-detail-label">Enabled</span>
-                        <span className="ad-detail-value">{String(Boolean(user.enabled))}</span>
-                    </div>
-                    <div className="ad-detail-row">
-                        <span className="ad-detail-label">Email verified</span>
-                        <span className="ad-detail-value">{String(Boolean(user.emailVerified))}</span>
-                    </div>
-                    <div className="ad-detail-row">
-                        <span className="ad-detail-label">Created</span>
-                        <span className="ad-detail-value">{user.createdAt ? new Date(user.createdAt).toLocaleString() : "-"}</span>
+
+                    <div className="ad-user-detail-col">
+                        <div className="ad-order-section">
+                            <div className="ad-order-head">
+                                <div className="mp-modal-title" style={{ fontSize: 20 }}>Order history</div>
+                                <div className="ad-list-meta">
+                                    {ordersLoading ? "Loading..." : `${orders.length} order${orders.length === 1 ? "" : "s"}`}
+                                </div>
+                            </div>
+
+                            {ordersError ? (
+                                <div className="pd-flash" style={{ background: "#fff2f2", borderColor: "#f1c1c1", color: "#7a0b0b" }}>
+                                    {ordersError}
+                                </div>
+                            ) : ordersLoading ? (
+                                <div className="pd-muted">Loading order history...</div>
+                            ) : orders.length === 0 ? (
+                                <div className="pd-muted">No orders yet.</div>
+                            ) : (
+                                <div className="ad-order-list">
+                                    {orders.map((order) => (
+                                        <article className="ad-order-card" key={order.orderId}>
+                                            <div className="ad-order-top">
+                                                <div>
+                                                    <div className="ad-list-title" style={{ fontSize: 16 }}>Order #{order.orderId}</div>
+                                                    <div className="ad-list-meta">{order.createdAt ? new Date(order.createdAt).toLocaleString() : "-"}</div>
+                                                </div>
+                                                <div className="ad-pill">{formatOrderStatus(order.status)}</div>
+                                            </div>
+
+                                            <div className="ad-order-meta">
+                                                <span><strong>Total:</strong> {formatMoney(order.totalAmount)}</span>
+                                                <span><strong>Ship to:</strong> {[order.shippingCity, order.shippingCountry].filter(Boolean).join(", ") || "-"}</span>
+                                            </div>
+
+                                            <div className="ad-order-items">
+                                                {(order.items || []).map((item, index) => (
+                                                    <div className="ad-order-item" key={`${order.orderId}-${item.productId || index}`}>
+                                                        <div className="ad-order-thumb">
+                                                            {item.imagePath ? <img src={resolveMediaUrl(item.imagePath)} alt={item.productName} /> : null}
+                                                        </div>
+                                                        <div className="ad-order-copy">
+                                                            <div className="ad-detail-value">{item.productName}</div>
+                                                            <div className="ad-list-meta">Qty {item.quantity}</div>
+                                                        </div>
+                                                        <div className="ad-detail-value">{formatMoney(item.price)}</div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </article>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
                     </div>
                 </div>
                 <div className="mp-modal-actions">
@@ -110,6 +179,9 @@ export default function AdminUsers(){
     const [query, setQuery] = useState("")
     const [roleFilter, setRoleFilter] = useState("ALL")
     const [selectedUser, setSelectedUser] = useState(null)
+    const [selectedUserOrders, setSelectedUserOrders] = useState([])
+    const [selectedUserOrdersLoading, setSelectedUserOrdersLoading] = useState(false)
+    const [selectedUserOrdersError, setSelectedUserOrdersError] = useState("")
     const [deleteTarget, setDeleteTarget] = useState(null)
     const [actionMessage, setActionMessage] = useState("")
     const [deletingId, setDeletingId] = useState(null)
@@ -159,6 +231,36 @@ export default function AdminUsers(){
             document.removeEventListener("keydown", handleKeyDown)
         }
     }, [])
+
+    useEffect(() => {
+        let cancelled = false
+
+        const loadOrders = async () => {
+            if(!selectedUser?.id){
+                setSelectedUserOrders([])
+                setSelectedUserOrdersError("")
+                setSelectedUserOrdersLoading(false)
+                return
+            }
+
+            setSelectedUserOrdersLoading(true)
+            setSelectedUserOrdersError("")
+            try{
+                const res = await API.get(`/admin/users/${selectedUser.id}/orders`)
+                if(cancelled) return
+                setSelectedUserOrders(Array.isArray(res.data) ? res.data : [])
+            }catch{
+                if(cancelled) return
+                setSelectedUserOrders([])
+                setSelectedUserOrdersError("Failed to load order history.")
+            }finally{
+                if(!cancelled) setSelectedUserOrdersLoading(false)
+            }
+        }
+
+        loadOrders()
+        return () => { cancelled = true }
+    }, [selectedUser?.id])
 
     
 
@@ -328,7 +430,13 @@ export default function AdminUsers(){
                 </div>
             </section>
 
-            <UserDetailDialog user={selectedUser} onClose={() => setSelectedUser(null)} />
+            <UserDetailDialog
+                user={selectedUser}
+                orders={selectedUserOrders}
+                ordersLoading={selectedUserOrdersLoading}
+                ordersError={selectedUserOrdersError}
+                onClose={() => setSelectedUser(null)}
+            />
             <DeleteUserDialog
                 user={deleteTarget}
                 loading={deletingId === deleteTarget?.id}

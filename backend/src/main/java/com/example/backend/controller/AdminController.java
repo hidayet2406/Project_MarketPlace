@@ -1,6 +1,7 @@
 package com.example.backend.controller;
 
 
+import com.example.backend.DTO.UserOrderSummaryDTO;
 import com.example.backend.DTO.VendorRequestDTO;
 import com.example.backend.DTO.ShopDTO;
 import com.example.backend.entity.Category;
@@ -101,6 +102,17 @@ public class AdminController {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "UNAUTHORIZED");
         }
         adminUserService.deleteUserCascade(id, principal.getUsername());
+    }
+
+    @GetMapping("/users/{id}/orders")
+    public List<UserOrderSummaryDTO> getUserOrders(
+            @PathVariable Long id,
+            @AuthenticationPrincipal UserDetails principal
+    ) {
+        if (principal == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "UNAUTHORIZED");
+        }
+        return adminUserService.getUserOrderHistory(id);
     }
 
 }

@@ -1,7 +1,9 @@
 package com.example.backend.service;
 
+import com.example.backend.DTO.UserOrderSummaryDTO;
 import com.example.backend.entity.Cart;
 import com.example.backend.entity.Order;
+import com.example.backend.entity.OrderItem;
 import com.example.backend.entity.Product;
 import com.example.backend.entity.Shop;
 import com.example.backend.entity.User;
@@ -23,6 +25,8 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
+import java.util.ArrayList;
+import java.util.Comparator;
 
 @Service
 public class AdminUserService {
@@ -56,6 +60,42 @@ public class AdminUserService {
 
     @Autowired
     AddressRepository addressRepository;
+
+    public List<UserOrderSummaryDTO> getUserOrderHistory(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "USER_NOT_FOUND"));
+
+        List<Order> orders = orderRepository.findAllByUser_Id(user.getId());
+        orders.sort(Comparator.comparing(Order::getCreatedAt, Comparator.nullsLast(Comparator.naturalOrder())).reversed());
+
+        List<UserOrderSummaryDTO> result = new ArrayList<>();
+        for (Order order : orders) {
+            List<UserOrderSummaryDTO.Item> items = new ArrayList<>();
+            if (order.getOrderItems() != null) {
+                for (OrderItem orderItem : order.getOrderItems()) {
+                    items.add(new UserOrderSummaryDTO.Item(
+                            orderItem.getProduct() != null ? orderItem.getProduct().getId() : null,
+                            orderItem.getProduct() != null ? orderItem.getProduct().getName() : "Product",
+                            orderItem.getProduct() != null ? orderItem.getProduct().getImagePath() : null,
+                            orderItem.getQuantity(),
+                            orderItem.getPrice()
+                    ));
+                }
+            }
+
+            result.add(new UserOrderSummaryDTO(
+                    order.getId(),
+                    order.getStatus(),
+                    order.getTotalAmount(),
+                    order.getCreatedAt(),
+                    order.getShippingAddress() != null ? order.getShippingAddress().getCity() : null,
+                    order.getShippingAddress() != null ? order.getShippingAddress().getCountry() : null,
+                    items
+            ));
+        }
+
+        return result;
+    }
 
     @Transactional
     public void deleteUserCascade(Long userId, String actingUsername) {
