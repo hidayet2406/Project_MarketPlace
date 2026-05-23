@@ -40,6 +40,13 @@ function MainPage(){
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState("")
     const [catOpen, setCatOpen] = useState(false)
+    const [showFilters, setShowFilters] = useState(false)
+
+    // Filter states
+    const [minPrice, setMinPrice] = useState("")
+    const [maxPrice, setMaxPrice] = useState("")
+    const [sortBy, setSortBy] = useState("newest")
+    const [inStockOnly, setInStockOnly] = useState(false)
 
     // Support deep links like "/?category=Men" (used by ProductDetail breadcrumb).
     useEffect(() => {
@@ -52,15 +59,34 @@ function MainPage(){
 
     const visibleProducts = useMemo(() => {
         const q = query.trim().toLowerCase()
-        return products.filter((p) => {
+        let filtered = products.filter((p) => {
             const categoryName = p?.category?.name || ""
             if(activeCategory !== "all" && categoryName !== activeCategory) return false
-            if(!q) return true
-            const name = (p?.name || "").toLowerCase()
-            const desc = (p?.description || "").toLowerCase()
-            return name.includes(q) || desc.includes(q)
+            
+            if(q){
+                const name = (p?.name || "").toLowerCase()
+                const desc = (p?.description || "").toLowerCase()
+                if(!name.includes(q) && !desc.includes(q)) return false
+            }
+
+            if(minPrice !== "" && Number(p.price) < Number(minPrice)) return false
+            if(maxPrice !== "" && Number(p.price) > Number(maxPrice)) return false
+            if(inStockOnly && (p.stock === null || p.stock <= 0)) return false
+
+            return true
         })
-    }, [activeCategory, query, products])
+
+        // Sorting
+        if(sortBy === "price_asc"){
+            filtered.sort((a, b) => Number(a.price) - Number(b.price))
+        } else if(sortBy === "price_desc"){
+            filtered.sort((a, b) => Number(b.price) - Number(a.price))
+        } else if(sortBy === "newest"){
+            filtered.sort((a, b) => b.id - a.id)
+        }
+
+        return filtered
+    }, [activeCategory, query, products, minPrice, maxPrice, sortBy, inStockOnly])
 
     useEffect(() => {
         let cancelled = false
@@ -194,7 +220,17 @@ function MainPage(){
                 <section className="mp-section">
                     <div className="mp-section-head">
                         <div>
-                            <h2 className="mp-h2">Trending products</h2>
+                            <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                                <h2 className="mp-h2">Trending products</h2>
+                                <button 
+                                    className="mp-btn mp-ghost-link" 
+                                    type="button"
+                                    onClick={() => setShowFilters(true)}
+                                    style={{ padding: "4px 12px", fontSize: "13px" }}
+                                >
+                                    Filters
+                                </button>
+                            </div>
                             <p className="mp-sub">
                                 {visibleProducts.length} item{visibleProducts.length === 1 ? "" : "s"} found
                                 {activeCategory !== "all" ? ` in "${activeCategory}"` : ""}
@@ -205,35 +241,116 @@ function MainPage(){
 
                     {error ? <div className="pd-flash" style={{ background: "#fff2f2", borderColor: "#f1c1c1", color: "#7a0b0b" }}>{error}</div> : null}
 
-                    <div className="mp-products" aria-live="polite">
-                        {loading ? (
-                            <div className="pd-muted">Loading...</div>
-                        ) : visibleProducts.map((p) => (
-                            <article className="mp-card" key={p.id}>
-                                <button
-                                    className="mp-img"
-                                    data-tone="cool"
-                                    type="button"
-                                    onClick={() => navigate(`/product/${p.id}`)}
-                                    aria-label={`Open ${p.name}`}
-                                >
-                                    <div className="mp-pill">{p?.category?.name || "Product"}</div>
-                                    {p?.imagePath ? <img className="mp-img-el" src={resolveMediaUrl(p.imagePath)} alt={p.name} /> : null}
-                                </button>
-                                <div className="mp-card-body">
-                                    <h3 className="mp-title">
-                                        <button className="mp-title-btn" type="button" onClick={() => navigate(`/product/${p.id}`)}>
-                                            {p.name}
-                                        </button>
-                                    </h3>
-                                    <div className="mp-meta">
-                                        <div className="mp-price">${Number(p.price || 0).toFixed(2)}</div>
-                                        <div className="mp-rating">{p.stock != null ? `Stock ${p.stock}` : ""}</div>
+                    <div className="mp-main-layout-closed">
+                        <div className="mp-products" aria-live="polite">
+                            {loading ? (
+                                <div className="pd-muted">Loading...</div>
+                            ) : visibleProducts.map((p) => (
+                                <article className="mp-card" key={p.id}>
+                                    <button
+                                        className="mp-img"
+                                        data-tone="cool"
+                                        type="button"
+                                        onClick={() => navigate(`/product/${p.id}`)}
+                                        aria-label={`Open ${p.name}`}
+                                    >
+                                        <div className="mp-pill">{p?.category?.name || "Product"}</div>
+                                        {p?.imagePath ? <img className="mp-img-el" src={resolveMediaUrl(p.imagePath)} alt={p.name} /> : null}
+                                    </button>
+                                    <div className="mp-card-body">
+                                        <h3 className="mp-title">
+                                            <button className="mp-title-btn" type="button" onClick={() => navigate(`/product/${p.id}`)}>
+                                                {p.name}
+                                            </button>
+                                        </h3>
+                                        <div className="mp-meta">
+                                            <div className="mp-price">${Number(p.price || 0).toFixed(2)}</div>
+                                            <div className="mp-rating">{p.stock != null ? `Stock ${p.stock}` : ""}</div>
+                                        </div>
+                                    </div>
+                                </article>
+                            ))}
+                        </div>
+                    </div>
+
+                    {showFilters && (
+                        <div className="mp-filter-modal-backdrop" onClick={() => setShowFilters(false)}>
+                            <div className="mp-filter-modal" onClick={(e) => e.stopPropagation()}>
+                                <div className="mp-filter-modal-head">
+                                    <h2 className="mp-filter-modal-title">Filter Products</h2>
+                                    <button className="mp-filter-modal-close" onClick={() => setShowFilters(false)}>&times;</button>
+                                </div>
+                                
+                                <div className="mp-filter-horizontal">
+                                    <div className="mp-filter-group">
+                                        <h3>Price Range</h3>
+                                        <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                                            <input 
+                                                type="number" 
+                                                placeholder="Min" 
+                                                className="mp-filter-input" 
+                                                value={minPrice}
+                                                onChange={(e) => setMinPrice(e.target.value)}
+                                            />
+                                            <span>-</span>
+                                            <input 
+                                                type="number" 
+                                                placeholder="Max" 
+                                                className="mp-filter-input" 
+                                                value={maxPrice}
+                                                onChange={(e) => setMaxPrice(e.target.value)}
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="mp-filter-group">
+                                        <h3>Sort By</h3>
+                                        <select 
+                                            className="mp-filter-input"
+                                            value={sortBy}
+                                            onChange={(e) => setSortBy(e.target.value)}
+                                        >
+                                            <option value="newest">Newest First</option>
+                                            <option value="price_asc">Price: Low to High</option>
+                                            <option value="price_desc">Price: High to Low</option>
+                                        </select>
+                                    </div>
+
+                                    <div className="mp-filter-group">
+                                        <h3>Availability</h3>
+                                        <label>
+                                            <input 
+                                                type="checkbox" 
+                                                checked={inStockOnly}
+                                                onChange={(e) => setInStockOnly(e.target.checked)}
+                                            />
+                                            <span>In Stock Only</span>
+                                        </label>
                                     </div>
                                 </div>
-                            </article>
-                        ))}
-                    </div>
+
+                                <div className="mp-filter-modal-footer">
+                                    <button 
+                                        className="mp-btn mp-ghost-link"
+                                        onClick={() => {
+                                            setMinPrice("");
+                                            setMaxPrice("");
+                                            setSortBy("newest");
+                                            setInStockOnly(false);
+                                        }}
+                                    >
+                                        Reset All
+                                    </button>
+                                    <button 
+                                        className="mp-btn mp-btn-primary"
+                                        onClick={() => setShowFilters(false)}
+                                    >
+                                        Apply Filters
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
                 </section>
 
             </main>
@@ -276,7 +393,7 @@ function MainPage(){
                     </div>
 
                     <div className="mp-home-footer-bottom">
-                        <div>� 2026 NovaMart</div>
+                        <div>© 2026 NovaMart</div>
                         <div className="mp-home-footer-bottom-links">
                             <span>Home / Categories / Products</span>
                         </div>
@@ -288,5 +405,3 @@ function MainPage(){
 }
 
 export default MainPage
-
-

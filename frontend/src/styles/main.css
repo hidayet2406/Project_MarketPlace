@@ -477,7 +477,7 @@ main {
 
 .mp-cat-desc{ margin:0; color:var(--mp-muted); font-size:13px; line-height:1.35; }
 
-.mp-products{ display:grid; grid-template-columns: repeat(4, 1fr); gap:10px; }
+.mp-products{ display:grid; grid-template-columns: repeat(3, 1fr); gap:10px; }
 
 .mp-card{
   border:1px solid var(--mp-border);
@@ -1852,3 +1852,141 @@ main {
   pointer-events: none;
 }
 
+
+.mp-main-layout {
+  display: grid;
+  grid-template-columns: 1fr 260px;
+  gap: 20px;
+  align-items: start;
+}
+
+.mp-filter-sidebar {
+  border: 1px solid var(--mp-border);
+  background: var(--mp-card);
+  border-radius: 6px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  position: sticky;
+  top: 70px;
+}
+
+.mp-filter-group h3 {
+  margin: 0 0 12px;
+  font-size: 14px;
+  font-weight: 800;
+  color: #111;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 1px solid var(--mp-border);
+  padding-bottom: 6px;
+}
+
+.mp-filter-group label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  cursor: pointer;
+  margin-bottom: 8px;
+}
+
+.mp-filter-input {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--mp-border);
+  border-radius: 4px;
+  font-size: 13px;
+  outline: none;
+}
+
+.mp-filter-input:focus {
+  border-color: var(--mp-accent);
+}
+
+@media (max-width: 980px) {
+  .mp-main-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+.mp-main-layout-closed {
+  display: block;
+}
+
+.mp-main-layout-closed .mp-products {
+  grid-template-columns: repeat(4, 1fr);
+}
+
+/* Filter Modal Styles */
+.mp-filter-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.mp-filter-modal {
+  margin-top: 80px;
+  background: #fff;
+  border-radius: 12px;
+  width: min(800px, 100%);
+  padding: 24px;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+  position: relative;
+}
+
+.mp-filter-modal-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  border-bottom: 1px solid var(--mp-border);
+  padding-bottom: 12px;
+}
+
+.mp-filter-modal-title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 900;
+}
+
+.mp-filter-modal-close {
+  background: transparent;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: var(--mp-muted);
+}
+
+.mp-filter-horizontal {
+  display: flex;
+  gap: 30px;
+  flex-wrap: wrap;
+  align-items: flex-start;
+}
+
+.mp-filter-modal .mp-filter-group {
+  flex: 1;
+  min-width: 200px;
+  margin-bottom: 0;
+}
+
+.mp-filter-modal .mp-filter-group h3 {
+  border-bottom: none;
+  margin-bottom: 8px;
+}
+
+.mp-filter-modal-footer {
+  margin-top: 24px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  border-top: 1px solid var(--mp-border);
+  padding-top: 16px;
+}
