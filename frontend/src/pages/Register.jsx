@@ -1,13 +1,15 @@
-import { useState } from "react"
+﻿import { useState } from "react"
 import API from "../api/api"
 import { Link, useNavigate } from "react-router-dom"
 import "../styles/main.css"
 import "../styles/auth.css"
+import ActionToast from "../components/ActionToast"
 
 function Register(){
 
     const navigate = useNavigate()
     const [showPassword, setShowPassword] = useState(false)
+    const [toastMessage, setToastMessage] = useState("")
 
     const [form,setForm] = useState({
         username:"",
@@ -24,13 +26,16 @@ function Register(){
 
             await API.post("/auth/register",form)
 
-            alert("User created")
+            setToastMessage("User created! Redirecting...")
 
-            navigate("/")
+            setTimeout(() => {
+                navigate("/login")
+            }, 2000)
 
         }catch(err){
             const msg = err?.response?.data?.message || err?.response?.data || "Register error"
-            alert(msg)
+            setToastMessage(msg)
+            setTimeout(() => setToastMessage(""), 3000)
         }
     }
 
@@ -72,6 +77,7 @@ function Register(){
 
 
         </div>
+        <ActionToast message={toastMessage} onClose={() => setToastMessage("")} />
         </div>
     )
 }

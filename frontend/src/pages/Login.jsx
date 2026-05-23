@@ -1,15 +1,17 @@
-import { useState } from "react"
+﻿import { useState } from "react"
 import API from "../api/api"
 import { Link, useNavigate } from "react-router-dom"
 import "../styles/main.css"
 import "../styles/auth.css"
 import { notifyAuthChanged } from "../utils/authEvents"
+import ActionToast from "../components/ActionToast"
 
 function Login(){
 
     const navigate = useNavigate()
     const [showPassword, setShowPassword] = useState(false)
     const [showForgot, setShowForgot] = useState(false)
+    const [toastMessage, setToastMessage] = useState("")
 
     const [form,setForm] = useState({
         username:"",
@@ -40,7 +42,8 @@ function Login(){
 
             if(!isJwt){
                 localStorage.removeItem("token")
-                alert("Login failed (invalid token).")
+                setToastMessage("Login failed (invalid token).")
+                setTimeout(() => setToastMessage(""), 3000)
                 return
             }
 
@@ -52,17 +55,20 @@ function Login(){
         }catch(err){
             localStorage.removeItem("token")
             const msg = err?.response?.data?.message || err?.response?.data || "Login failed"
-            alert(msg)
+            setToastMessage(msg)
+            setTimeout(() => setToastMessage(""), 3000)
         }
     }
 
     const handleResetPassword = async () => {
         if (!resetForm.username || !resetForm.newPassword || !resetForm.confirmPassword) {
-            alert("Please fill all fields")
+            setToastMessage("Please fill all fields")
+            setTimeout(() => setToastMessage(""), 3000)
             return
         }
         if (resetForm.newPassword !== resetForm.confirmPassword) {
-            alert("Passwords do not match")
+            setToastMessage("Passwords do not match")
+            setTimeout(() => setToastMessage(""), 3000)
             return
         }
         
@@ -71,12 +77,14 @@ function Login(){
                 username: resetForm.username,
                 newPassword: resetForm.newPassword
             });
-            alert(res.data || "Password reset successful");
+            setToastMessage(res.data || "Password reset successful");
             setShowForgot(false);
             setResetForm({ username: "", newPassword: "", confirmPassword: "" });
+            setTimeout(() => setToastMessage(""), 3000);
         } catch (err) {
             const msg = err?.response?.data?.message || err?.response?.data || "Reset failed";
-            alert(msg);
+            setToastMessage(msg);
+            setTimeout(() => setToastMessage(""), 3000);
         }
     }
 
@@ -125,7 +133,6 @@ function Login(){
                 No account? <Link to="/register">Create one</Link>
             </div>
 
-
         </div>
 
         {showForgot && (
@@ -159,6 +166,8 @@ function Login(){
                 </div>
             </div>
         )}
+
+        <ActionToast message={toastMessage} onClose={() => setToastMessage("")} />
         </div>
     )
 }

@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useRef, useState } from "react"
+﻿import { useEffect, useMemo, useRef, useState } from "react"
 import API from "../api/api"
 import AdminLayout from "../components/AdminLayout"
 import { notifyAuthChanged } from "../utils/authEvents"
+import ActionToast from "../components/ActionToast"
 
 const VENDOR_STATUSES = ["PENDING", "APPROVED", "REJECTED", "SUSPENDED"]
 
@@ -9,7 +10,7 @@ export default function AdminVendors(){
     const [vendors, setVendors] = useState([])
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState("")
-    const [message, setMessage] = useState("")
+    const [toastMessage, setToastMessage] = useState("")
     const [query, setQuery] = useState("")
     const [statusFilter, setStatusFilter] = useState("ALL")
     const [updatingId, setUpdatingId] = useState(null)
@@ -74,14 +75,16 @@ export default function AdminVendors(){
     const handleVendorStatus = async (vendorId, status) => {
         if(updatingId) return
         setUpdatingId(vendorId)
-        setMessage("")
+        setToastMessage("")
 
         try{
             await API.put(`/admin/${vendorId}/updateVendor`, { status })
-            setMessage(`Vendor request updated to ${status}.`)
+            setToastMessage(`Vendor request updated to ${status}.`)
+            setTimeout(() => setToastMessage(""), 3000)
             await loadVendors()
         }catch{
-            setMessage("Failed to update vendor request.")
+            setToastMessage("Failed to update vendor request.")
+            setTimeout(() => setToastMessage(""), 3000)
         }finally{
             setUpdatingId(null)
         }
@@ -137,9 +140,6 @@ export default function AdminVendors(){
                     </div>
                 ) : null}
 
-                
-    {message ? <div className="pd-flash" style={message.toLowerCase().includes("failed") ? { background: "#fff2f2", borderColor: "#f1c1c1", color: "#7a0b0b" } : undefined}>{message}</div> : null}
-
                 <div className="ad-results">
                     <div className="ad-results-count">
                         {loading ? "Loading requests..." : `${filteredVendors.length} request${filteredVendors.length === 1 ? "" : "s"} found`}
@@ -182,7 +182,7 @@ export default function AdminVendors(){
                     )}
                 </div>
             </section>
+            <ActionToast message={toastMessage} onClose={() => setToastMessage("")} />
         </AdminLayout>
     )
 }
-
