@@ -84,8 +84,6 @@ public class AuthController {
                             username,
                             request.getPassword()
                     ));
-
-            // Use canonical username from DB to keep token subject consistent.
             String canonical = userRepository.findByUsernameIgnoreCase(username)
                     .map(User::getUsername)
                     .orElse(username.trim().toUpperCase());

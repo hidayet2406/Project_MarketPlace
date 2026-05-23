@@ -28,7 +28,15 @@ public class TransactionController {
     public Transaction deposit(
             @AuthenticationPrincipal UserDetails principal,
             @RequestBody WalletAmountDTO request) {
-        BigDecimal amount = request != null ? request.getAmount() : null;
+
+        //BigDecimal amount = request != null ? request.getAmount() : null;
+        BigDecimal amount;
+        if (request != null) {
+            amount = request.getAmount();
+        } else {
+            amount = null;
+        }
+
         if (principal == null) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "UNAUTHORIZED");
         }
@@ -41,7 +49,13 @@ public class TransactionController {
     @PostMapping("/wallet/withdraw")
     public Transaction withdraw(@AuthenticationPrincipal UserDetails principal,
                                 @RequestBody WalletAmountDTO request) {
-        BigDecimal amount = request != null ? request.getAmount() : null;
+        BigDecimal amount;
+
+        if (request != null) {
+            amount = request.getAmount();
+        } else {
+            amount = null;
+        }
 
         if (principal == null) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "UNAUTHORIZED");

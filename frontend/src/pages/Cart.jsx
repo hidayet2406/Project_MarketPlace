@@ -203,10 +203,10 @@ function Cart(){
                                         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                                             {items.length > 0 && (
                                                 <input 
+                                                    className="ct-check"
                                                     type="checkbox" 
                                                     checked={selectedIds.length === items.length}
                                                     onChange={toggleAll}
-                                                    style={{ width: 18, height: 18, cursor: "pointer" }}
                                                 />
                                             )}
                                             <h1 className="pd-title" style={{ fontSize: 20, margin: 0 }}>Your cart</h1>
@@ -225,10 +225,10 @@ function Cart(){
                                                 <article className="ct-item" key={it.productId} style={{ gridTemplateColumns: "30px 92px 1fr" }}>
                                                     <div style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
                                                         <input 
+                                                            className="ct-check"
                                                             type="checkbox" 
                                                             checked={selectedIds.includes(it.productId)}
                                                             onChange={() => toggleSelect(it.productId)}
-                                                            style={{ width: 18, height: 18, cursor: "pointer" }}
                                                         />
                                                     </div>
                                                     <div className="ct-img">
