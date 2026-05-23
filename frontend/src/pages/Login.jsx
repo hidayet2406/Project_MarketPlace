@@ -9,14 +9,25 @@ function Login(){
 
     const navigate = useNavigate()
     const [showPassword, setShowPassword] = useState(false)
+    const [showForgot, setShowForgot] = useState(false)
 
     const [form,setForm] = useState({
         username:"",
         password:""
     })
 
+    const [resetForm, setResetForm] = useState({
+        username: "",
+        newPassword: "",
+        confirmPassword: ""
+    })
+
     const handleChange = (e)=>{
         setForm({...form,[e.target.name]:e.target.value})
+    }
+
+    const handleResetChange = (e) => {
+        setResetForm({...resetForm, [e.target.name]: e.target.value})
     }
 
     const login = async ()=>{
@@ -42,6 +53,30 @@ function Login(){
             localStorage.removeItem("token")
             const msg = err?.response?.data?.message || err?.response?.data || "Login failed"
             alert(msg)
+        }
+    }
+
+    const handleResetPassword = async () => {
+        if (!resetForm.username || !resetForm.newPassword || !resetForm.confirmPassword) {
+            alert("Please fill all fields")
+            return
+        }
+        if (resetForm.newPassword !== resetForm.confirmPassword) {
+            alert("Passwords do not match")
+            return
+        }
+        
+        try {
+            const res = await API.post("/auth/reset-password", {
+                username: resetForm.username,
+                newPassword: resetForm.newPassword
+            });
+            alert(res.data || "Password reset successful");
+            setShowForgot(false);
+            setResetForm({ username: "", newPassword: "", confirmPassword: "" });
+        } catch (err) {
+            const msg = err?.response?.data?.message || err?.response?.data || "Reset failed";
+            alert(msg);
         }
     }
 
@@ -76,14 +111,54 @@ function Login(){
 
             <button onClick={login}>Login</button>
 
-            <div className="auth-link">
-                No account? <Link to="/register">Create one</Link>
-            </div>
-            <div style={{ marginTop: 30 }}>
-                <Link to="/" style={{ color: "var(--mp-link)", textDecoration: "none", fontWeight: 800 }}>Back to home ?</Link>
+            <div className="auth-link" style={{ textAlign: "left", fontSize: "16px", marginTop: "10px" }}>
+                <button 
+                    className="auth-forgot-btn"
+                    type="button" 
+                    onClick={() => setShowForgot(true)}
+                >
+                    Forgot Password
+                </button>
             </div>
 
+            <div className="auth-link" style={{ marginTop: 40 }}>
+                No account? <Link to="/register">Create one</Link>
+            </div>
+
+
         </div>
+
+        {showForgot && (
+            <div className="auth-modal-backdrop">
+                <div className="auth-modal">
+                    <h3>Reset Password</h3>
+                    <input 
+                        name="username" 
+                        placeholder="Username" 
+                        value={resetForm.username}
+                        onChange={handleResetChange}
+                    />
+                    <input 
+                        name="newPassword" 
+                        type="password" 
+                        placeholder="New Password" 
+                        value={resetForm.newPassword}
+                        onChange={handleResetChange}
+                    />
+                    <input 
+                        name="confirmPassword" 
+                        type="password" 
+                        placeholder="Confirm Password" 
+                        value={resetForm.confirmPassword}
+                        onChange={handleResetChange}
+                    />
+                    <div className="auth-modal-actions">
+                        <button className="auth-modal-btn auth-modal-btn-primary" onClick={handleResetPassword}>Reset Password</button>
+                        <button className="auth-modal-btn auth-modal-btn-ghost" onClick={() => setShowForgot(false)}>Cancel</button>
+                    </div>
+                </div>
+            </div>
+        )}
         </div>
     )
 }

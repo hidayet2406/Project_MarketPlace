@@ -2,6 +2,7 @@ package com.example.backend.controller;
 
 import com.example.backend.DTO.LoginDTO;
 import com.example.backend.DTO.RegisterDTO;
+import com.example.backend.DTO.ResetPasswordDTO;
 import com.example.backend.config.JwtUtil;
 import com.example.backend.entity.User;
 import com.example.backend.repository.UserRepository;
@@ -95,4 +96,21 @@ public class AuthController {
         }
     }
 
+
+    @PostMapping("/reset-password")
+    public String resetPassword(@RequestBody ResetPasswordDTO request){
+        if(request.getUsername() == null || request.getNewPassword() == null 
+                || request.getUsername().isBlank() || request.getNewPassword().isBlank()){
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Username and new password are required");
+        }
+
+        User user = userRepository.findByUsernameIgnoreCase(request.getUsername().trim())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+
+        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+        user.setUpdatedAt(LocalDateTime.now());
+        userRepository.save(user);
+
+        return "PASSWORD RESET SUCCESSFUL";
+    }
 }

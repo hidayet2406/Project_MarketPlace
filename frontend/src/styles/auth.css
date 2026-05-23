@@ -75,7 +75,7 @@
     border-color:#b8bcbc;
 }
 
-.auth-container button:not(.auth-eye){
+.auth-container button:not(.auth-eye):not(.auth-forgot-btn){
     width:100%;
     padding:14px 12px;
     margin-top:12px;
@@ -107,4 +107,80 @@
 
 .auth-link a:hover{
     text-decoration:underline;
+}
+
+/* Forgot Password Modal */
+.auth-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  padding: 20px;
+}
+
+.auth-modal {
+  background: #fff;
+  border-radius: 10px;
+  width: min(400px, 100%);
+  padding: 24px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+}
+
+.auth-modal h3 {
+  margin: 0 0 20px;
+  font-size: 20px;
+  font-weight: 800;
+  text-align: center;
+}
+
+.auth-modal input {
+  width: 100%;
+  padding: 12px;
+  margin-bottom: 12px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+.auth-modal-actions {
+  display: grid;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.auth-modal-btn {
+  padding: 12px;
+  border: none;
+  border-radius: 6px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.auth-modal-btn-primary {
+  background: #febd69;
+  color: #111;
+}
+
+.auth-modal-btn-ghost {
+  background: transparent;
+  border: 1px solid #ddd;
+}
+
+.auth-forgot-btn {
+  background: none;
+  border: none;
+  color: var(--mp-link);
+  font-weight: bold;
+  cursor: pointer;
+  padding: 0;
+  font-size: inherit;
+  display: block;
+  text-align: left;
+}
+
+.auth-forgot-btn:hover {
+  text-decoration: underline;
 }

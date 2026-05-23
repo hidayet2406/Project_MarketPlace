@@ -66,13 +66,11 @@ function Register(){
 
             <button onClick={register}>Register</button>
 
-            <div className="auth-link">
+            <div className="auth-link" style={{ marginTop: 40 }}>
                 Already have an account? <Link to="/login">Sign in</Link>
             </div>
 
-            <div style={{ marginTop: 30 }}>
-                <Link to="/" style={{ color: "var(--mp-link)", textDecoration: "none", fontWeight: 800 }}>Back to home ?</Link>
-            </div>
+
         </div>
         </div>
     )
